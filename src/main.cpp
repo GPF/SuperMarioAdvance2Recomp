@@ -1,16 +1,45 @@
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
 #include "runtime.h"
 #include "smw_extended_view.h"
 
+#if defined(SMA2_DREAMCAST)
+#include <arch/arch.h>
+#include <dc/maple/controller.h>
+#include <kos/thread.h>
+#endif
+
 #if defined(GBAGAME_RECOMP_UI)
 #include "game_launcher_boot.h"
 #endif
 
-int main(int argc, char** argv) {
+static int run_sma2(int argc, char** argv) {
+#if defined(SMA2_DREAMCAST)
+    // Native cart dispatch is intentionally disabled until the interpreter
+    // port has established correct startup, video, and controller behavior.
+    setenv("GBARECOMP_FORCE_INTERP", "1", 1);
+    // dcload's current working directory is not the mapped /pc root, and some
+    // KOS launch paths do not propagate the optional argv tail. Make the
+    // mounted project assets explicit so startup is deterministic.
+    std::vector<std::string> dc_args;
+    dc_args.emplace_back(argc > 0 && argv && argv[0]
+                             ? argv[0] : "SuperMarioAdvance2Recomp.elf");
+    dc_args.emplace_back("--config");
+    dc_args.emplace_back("/pc/game.toml");
+    dc_args.emplace_back("--bios");
+    dc_args.emplace_back("/pc/gbarecomp/bios/gba_bios.bin");
+    dc_args.emplace_back("--rom");
+    dc_args.emplace_back("/pc/roms/super_mario_world_usa.gba");
+    std::vector<char*> dc_argv;
+    dc_argv.reserve(dc_args.size());
+    for (auto& arg : dc_args) dc_argv.push_back(arg.data());
+    argc = static_cast<int>(dc_argv.size());
+    argv = dc_argv.data();
+#endif
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--help") == 0 ||
             std::strcmp(argv[i], "-h") == 0) {
@@ -51,3 +80,43 @@ int main(int argc, char** argv) {
     return gbarecomp::run_game(argc, argv, opts);
 #endif
 }
+
+#if defined(SMA2_DREAMCAST)
+namespace {
+struct LaunchArgs { int argc; char** argv; };
+
+void* run_with_port_stack(void* opaque) {
+    const auto* args = static_cast<const LaunchArgs*>(opaque);
+    const int result = run_sma2(args->argc, args->argv);
+    return reinterpret_cast<void*>(static_cast<intptr_t>(result));
+}
+} // namespace
+
+int main(int argc, char** argv) {
+    cont_btn_callback(0,
+        CONT_START | CONT_A | CONT_B | CONT_X | CONT_Y,
+        (cont_btn_callback_t)arch_exit);
+    std::setvbuf(stdout, nullptr, _IONBF, 0);
+    std::setvbuf(stderr, nullptr, _IONBF, 0);
+    std::fprintf(stderr, "[sma2] main entered\n");
+    LaunchArgs args{argc, argv};
+    kthread_attr_t attr{};
+    attr.stack_size = 512 * 1024;
+    attr.label = "SMA2 interpreter";
+    kthread_t* thread = thd_create_ex(&attr, run_with_port_stack, &args);
+    if (!thread) {
+        std::fprintf(stderr, "fatal: could not allocate 512 KiB SMA2 stack\n");
+        return 1;
+    }
+    void* result = nullptr;
+    const int join_result = thd_join(thread, &result);
+    if (join_result != 0) {
+        std::fprintf(stderr, "fatal: could not join SMA2 runtime thread (%d)\n",
+                     join_result);
+        return 1;
+    }
+    return static_cast<int>(reinterpret_cast<intptr_t>(result));
+}
+#else
+int main(int argc, char** argv) { return run_sma2(argc, argv); }
+#endif

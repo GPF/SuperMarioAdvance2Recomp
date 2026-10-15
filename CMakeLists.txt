@@ -7,12 +7,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(GBARECOMP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/gbarecomp"
     CACHE PATH "Path to this game's gbarecomp worktree")
+option(SMA2_DREAMCAST "Build the interpreter-first KallistiOS port" OFF)
 set(RECOMP_UI_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/recomp-ui"
     CACHE PATH "Path to the shared recomp-ui checkout")
 set(GBARECOMP_RUNTIME_UI_ROOT "${RECOMP_UI_ROOT}"
     CACHE PATH "recomp-ui root used by the live GBA runtime adapter")
-set(GBARECOMP_ENABLE_MODS ON CACHE BOOL
-    "Enable Super Mario World's built-in mod catalog" FORCE)
+if(SMA2_DREAMCAST)
+    set(GBARECOMP_ENABLE_MODS OFF CACHE BOOL
+        "Enable Super Mario World's built-in mod catalog" FORCE)
+else()
+    set(GBARECOMP_ENABLE_MODS ON CACHE BOOL
+        "Enable Super Mario World's built-in mod catalog" FORCE)
+endif()
 if(NOT EXISTS "${GBARECOMP_ROOT}/CMakeLists.txt")
     message(FATAL_ERROR
         "GBARECOMP_ROOT is not a gbarecomp checkout:\n"
@@ -34,8 +40,10 @@ file(GLOB GAME_GENERATED_SOURCES CONFIGURE_DEPENDS
 add_executable(SuperMarioWorldRecomp
     src/main.cpp
     src/smw_extended_view.cpp
-    src/mods/smw_adaptive_view_plugin.cpp
     ${GAME_GENERATED_SOURCES})
+if(NOT SMA2_DREAMCAST)
+    target_sources(SuperMarioWorldRecomp PRIVATE src/mods/smw_adaptive_view_plugin.cpp)
+endif()
 
 set(GAME_RECOMPILED_SOURCES ${GAME_GENERATED_SOURCES})
 list(FILTER GAME_RECOMPILED_SOURCES INCLUDE REGEX
@@ -63,6 +71,19 @@ target_compile_definitions(SuperMarioWorldRecomp PRIVATE
     GBARECOMP_DEFAULT_DEBUG_PORT=19877
     GBARECOMP_WINDOW_TITLE="SuperMarioWorldRecomp"
     GBARECOMP_DEFAULT_GAME_CONFIG="game.toml")
+
+if(SMA2_DREAMCAST)
+    if(NOT KOS_ARCH STREQUAL "dreamcast")
+        message(FATAL_ERROR "SMA2_DREAMCAST requires KallistiOS kos-cmake")
+    endif()
+    target_compile_definitions(SuperMarioWorldRecomp PRIVATE SMA2_DREAMCAST=1)
+    target_sources(SuperMarioWorldRecomp PRIVATE src/dreamcast_empty_dispatch.cpp)
+    target_compile_definitions(gbarecomp_runtime PRIVATE SMA2_DREAMCAST=1)
+    target_include_directories(gbarecomp_runtime PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_link_options(SuperMarioWorldRecomp PRIVATE
+        "-Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/SuperMarioWorldRecomp.map")
+endif()
 
 option(GBAGAME_RECOMP_UI "Build the recomp-ui pre-boot launcher" ON)
 if(GBAGAME_RECOMP_UI)
