@@ -1,0 +1,17 @@
+PASS B16.elf
+PASS media/sma2_checkpoint.bin
+PASS media/roms/super_mario_world_usa.gba
+PASS media/gbarecomp/bios/gba_bios.bin
+PASS media/game.toml
+PASS media/saves/super_mario_world_usa.sav
+PASS pmu mode files absent / no stale outputs (checked)
+PASS emulator has Gate 4 recorder
+PASS emulator has Gate 8A bridge
+PASS pinned emulator copy == build output
+PASS libswirl/reios/dcload_fs.cpp older than the binary
+PASS libswirl/reios/dcload_abi.cpp older than the binary
+PASS libswirl/reios/dcload_bridge.cpp older than the binary
+PASS libswirl/hw/sh4/sh4_trace.cpp older than the binary
+e51831cd640b4b39d7a83fac6c75ceba84dfbceccf292bb113af9563c3fd9eaa  ./nulldc3-emu
+PASS port 55611 free
+PREFLIGHT PASS

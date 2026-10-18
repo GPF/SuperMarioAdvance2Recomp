@@ -1,0 +1,59 @@
+PASS magic/version/header - (b'N3IT', 1, 24)
+PASS status complete(2), interpreter(1), limit 1000000, count 1000002, dropped 0 - (2, 1, 1000000, 1000002, 0)
+PASS file size == 24+16*count - 16000056
+PASS record types: 1 start, 1000000 instruction, 1 end, no overflow/backend-exit - {1: 1, 2: 1000000, 3: 1}
+PASS start seq 0, instruction seq 1..1000000 contiguous, end seq 1000001 opcode 0
+PASS mode 1 on every record
+PASS first PC 0x8C01BEFA, opcode 0xE750 (bytes 50e7) == ELF word - ('0x8c01befa', '0xe750')
+regions of executed PCs: {'elf-file': 999998, 'ram-dcload-reios': 2}
+PASS every ELF-file-backed PC: recorded opcode == ELF word - (999998, 'checked', 0, 'mismatch', [])
+non-ELF-file PCs by (region, 4K page): {('ram-dcload-reios', 573441): 2}
+irq after bf/s/bt/s at 8c0ed224 (index 299432): resumes at pc+2 (not taken) after 3290 records
+irq after bf/s/bt/s at 8c05acf6 (index 754153): resumes at pc+2 (not taken) after 2417 records
+PASS every interrupt entry after a delayed-conditional resumes at pc+2 (branch not taken, slot not executed) - 2
+explained: async interrupt entries at _vma_table_600: 8 ; REIOS HLE traps (opcode 0x085B in the dcload/REIOS RAM area, return to PR): 2
+PASS every interrupt entered after a delay slot later resumes at the branch target (taken-branch SPC) - 0
+PASS delayed branches: slot executes at pc+2 and the slot is not a branch - (154975, 'delayed branches', 0, 'bad', [])
+PASS direct delayed branch targets (bra/bsr, bt/s, bf/s) match their displacement - (130803, 'checked', 0, 'bad', [])
+PASS no unexplained discontinuities (non-branch not followed by pc+2; conditional not at pc+2/target; trapa) - (0, [])
+trace tail: last pc 0x8c03e87e (a delayed branch/slot split at the end is not checked)
+distinct functions 263
+  149105 14.91%  armv4t::ThumbDecoder::decode(unsigned short, unsigned long)
+  131913 13.19%  runtime_bridge_interpret.constprop.0.isra.0
+  118864 11.89%  _findenv_r
+  109944 10.99%  armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*) [clone .part.
+   49970  5.00%  strncmp
+   48906  4.89%  gbarecomp::store_interp_into_arm_cpu(armv4t::CPUState const&, ArmCpuState&) [clone .constprop.0]
+   38971  3.90%  (anonymous namespace)::record_and_log_miss(unsigned long, bool) [clone .lto_priv.0]
+   36768  3.68%  runtime_tick.part.0
+   27729  2.77%  gba::GpioPort::active() const
+   27324  2.73%  gba::GbaBus::read16(unsigned long)
+   26075  2.61%  mALLOc.lto_priv.0
+   22190  2.22%  (anonymous namespace)::lookup_in(DispatchEntry const*, unsigned int, unsigned long, bool) [clone .lto_priv.0]
+   17568  1.76%  sma2::h5_diag::retire_impl(unsigned long, unsigned long, bool) [clone .constprop.0]
+   15780  1.58%  __newlib_lock_acquire_recursive
+   15295  1.53%  std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, std::_Rb_tree_nod
+   12949  1.29%  armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*)::{lambda(unsi
+   12390  1.24%  gba::GbaBus::write32(unsigned long, unsigned long)
+   12093  1.21%  (anonymous namespace)::Sma2ParityBridgeBus::code_wait(unsigned long, bool, bool) const
+   11825  1.18%  std::_Rb_tree_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > std::_Rb_tree<unsigned
+   10831  1.08%  mutex_unlock
+    7956  0.80%  (anonymous namespace)::Sma2ParityBridgeBus::access_cycles(unsigned long, unsigned char, bool) const [clone .lt
+    6720  0.67%  bus_write_u32
+    6490  0.65%  gba::resolve_offset(unsigned long, gba::Region)
+    6312  0.63%  getenv
+    6312  0.63%  __newlib_lock_release_recursive
+entries to retire_impl                  8c01beb0 : 319
+entries to runtime_bridge_interpret     8c052874 : 22
+entries to ThumbDecoder::decode         8c077148 : 320
+entries to Interpreter::step.part.0     8c077ca0 : 311
+entries to runtime_tick                 8c040938 : 0
+entries to runtime_tick.part.0          8c040060 : 320
+entries to dispatch_resolve             8c080654 : 22
+entries to runtime_dispatch             8c081894 : 0
+entries to capture_named                8c01bcf8 : 0
+entries to sma2pmu_get_ticks            8c108da0 : 0
+PASS intended path present: retire_impl and runtime_bridge_interpret both entered
+PASS no window-end/capture code in the sample (capture_named never entered)
+GUEST INSTRUCTIONS RETIRED IN SAMPLE (retire_impl entries; the first window instruction retires at index 0): 319
+RESULT TRACE VALID

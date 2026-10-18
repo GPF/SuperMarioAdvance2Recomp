@@ -1,0 +1,37 @@
+{
+ "bytes": "50e7",
+ "guest": {
+  "R15": 134853240,
+  "CPSR": 1610612799,
+  "R": [
+   0,
+   50342853,
+   50342756,
+   50342756,
+   0,
+   0,
+   0,
+   0,
+   50342756,
+   67109376,
+   50340672,
+   0,
+   4294966784,
+   50363864,
+   134853242,
+   134853240
+  ],
+  "cycles": 56424200,
+  "vblank": 201,
+  "irq_entries": 192,
+  "irq_iret_depth": 0,
+  "h5_armed": 1,
+  "h5_complete": 0,
+  "h5_retired": 0,
+  "h5_interpreter_retired": 1,
+  "native_calls_total": 0
+ },
+ "checkpoint_ok_lines": 1,
+ "immediate_file_sha256": "50282ea4be8bea13b9063a38438dcde0b0b330bf0f3b929edf525bb112af32e6",
+ "pc": "0x8C01BEFA"
+}

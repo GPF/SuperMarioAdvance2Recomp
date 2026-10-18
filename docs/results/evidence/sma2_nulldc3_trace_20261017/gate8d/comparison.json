@@ -1,0 +1,886 @@
+{
+ "full_B16": {
+  "name": "B16",
+  "instructions": 1000000,
+  "retire_impl": 319,
+  "bridge": 22,
+  "decode": 320,
+  "step": 311,
+  "irq_entries": 8,
+  "traps": 2,
+  "unique_pcs": 9450,
+  "unique_32B_lines": 911,
+  "unique_8KiB_dm_indices": 255,
+  "origin": {
+   "application (LTO)": 788722,
+   "toolchain libc/libgcc/libstdc++": 210124,
+   "KOS": 1152,
+   "REIOS/HLE trap (non-ELF)": 2
+  },
+  "functions_top50": [
+   [
+    "armv4t::ThumbDecoder::decode(unsigned short, unsigned long)",
+    149105
+   ],
+   [
+    "runtime_bridge_interpret",
+    131913
+   ],
+   [
+    "_findenv_r",
+    118864
+   ],
+   [
+    "armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*)",
+    109944
+   ],
+   [
+    "strncmp",
+    49970
+   ],
+   [
+    "gbarecomp::store_interp_into_arm_cpu(armv4t::CPUState const&, ArmCpuState&)",
+    48906
+   ],
+   [
+    "(anonymous namespace)::record_and_log_miss(unsigned long, bool)",
+    38971
+   ],
+   [
+    "runtime_tick",
+    36768
+   ],
+   [
+    "gba::GpioPort::active() const",
+    27729
+   ],
+   [
+    "gba::GbaBus::read16(unsigned long)",
+    27324
+   ],
+   [
+    "mALLOc",
+    26075
+   ],
+   [
+    "(anonymous namespace)::lookup_in(DispatchEntry const*, unsigned int, unsigned long, bool)",
+    22190
+   ],
+   [
+    "sma2::h5_diag::retire_impl(unsigned long, unsigned long, bool)",
+    17568
+   ],
+   [
+    "__newlib_lock_acquire_recursive",
+    15780
+   ],
+   [
+    "std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, std::_Rb_tree_node_base&)",
+    15295
+   ],
+   [
+    "armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*)::{lambda(unsigned long, unsigned long)#1}::operator()(unsigned long, unsigned long) const",
+    12949
+   ],
+   [
+    "gba::GbaBus::write32(unsigned long, unsigned long)",
+    12390
+   ],
+   [
+    "(anonymous namespace)::Sma2ParityBridgeBus::code_wait(unsigned long, bool, bool) const",
+    12093
+   ],
+   [
+    "std::_Rb_tree_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > std::_Rb_tree<unsigned long, std::pair<unsigned long const, (anonymous namespace)::MissRec>, std::_Select1st<std::pair<unsigned long const, (anonymous namespace)::MissRec> >, std::less<unsigned long>, std::allocator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > >::_M_emplace_hint_unique<std::piecewise_construct_t const&, std::tuple<unsigned long const&>, std::tuple<> >(std::_Rb_tree_const_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> >, std::piecewise_construct_t const&, std::tuple<unsigned long const&>&&, std::tuple<>&&)",
+    11825
+   ],
+   [
+    "mutex_unlock",
+    10831
+   ],
+   [
+    "(anonymous namespace)::Sma2ParityBridgeBus::access_cycles(unsigned long, unsigned char, bool) const",
+    7956
+   ],
+   [
+    "(label) at map section",
+    6919
+   ],
+   [
+    "bus_write_u32",
+    6720
+   ],
+   [
+    "gba::resolve_offset(unsigned long, gba::Region)",
+    6490
+   ],
+   [
+    "getenv",
+    6312
+   ],
+   [
+    "__newlib_lock_release_recursive",
+    6312
+   ],
+   [
+    "mutex_lock_timed",
+    5684
+   ],
+   [
+    "malloc",
+    4941
+   ],
+   [
+    "tick_devices(gba::GbaBus*, gba::GbaPpu*, unsigned long)",
+    4859
+   ],
+   [
+    "armv4t::(anonymous namespace)::eval_op2(armv4t::CPUState const&, armv4t::Instr const&)",
+    3438
+   ],
+   [
+    "gbarecomp::load_arm_cpu_into_interp(ArmCpuState const&, armv4t::CPUState&)",
+    3432
+   ],
+   [
+    "gba::GbaBus::read32(unsigned long)",
+    3308
+   ],
+   [
+    "bus_read_u32",
+    2901
+   ],
+   [
+    "__popcountsi2",
+    2808
+   ],
+   [
+    "(anonymous namespace)::dispatch_resolve(unsigned long)",
+    2662
+   ],
+   [
+    "operator new(unsigned int)",
+    2562
+   ],
+   [
+    "std::_Rb_tree_decrement(std::_Rb_tree_node_base*)",
+    2252
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)",
+    2200
+   ],
+   [
+    "__env_lock",
+    2104
+   ],
+   [
+    "__env_unlock",
+    2104
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)::{lambda()#5}::operator()() const",
+    1870
+   ],
+   [
+    "handler_irq9",
+    1436
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)::{lambda(unsigned long long)#1}::operator()(unsigned long long) const",
+    1181
+   ],
+   [
+    "armv4t::(anonymous namespace)::do_shift(unsigned long, armv4t::ShiftType, unsigned long, bool, bool)",
+    1140
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)::{lambda()#32}::operator()() const",
+    924
+   ],
+   [
+    "thd_schedule",
+    796
+   ],
+   [
+    "__udiv_qrnnd_16",
+    760
+   ],
+   [
+    "gba::GbaAudio::mix_one_sample(unsigned long, bool, gba::GbaAudio::ChannelTap*)",
+    752
+   ],
+   [
+    "bus_read_u8",
+    649
+   ],
+   [
+    "maple_vbl_irq_hnd",
+    560
+   ]
+  ]
+ },
+ "full_L0B16": {
+  "name": "L0B16",
+  "instructions": 1000000,
+  "retire_impl": 273,
+  "bridge": 19,
+  "decode": 273,
+  "step": 264,
+  "irq_entries": 8,
+  "traps": 2,
+  "unique_pcs": 10099,
+  "unique_32B_lines": 981,
+  "unique_8KiB_dm_indices": 255,
+  "origin": {
+   "application (LTO)": 680906,
+   "toolchain libc/libgcc/libstdc++": 317940,
+   "KOS": 1152,
+   "REIOS/HLE trap (non-ELF)": 2
+  },
+  "functions_top50": [
+   [
+    "armv4t::ThumbDecoder::decode(unsigned short, unsigned long)",
+    127273
+   ],
+   [
+    "_findenv_r",
+    118864
+   ],
+   [
+    "runtime_bridge_interpret",
+    111391
+   ],
+   [
+    "armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*)",
+    84069
+   ],
+   [
+    "strncmp",
+    49970
+   ],
+   [
+    "_svfprintf_r",
+    46949
+   ],
+   [
+    "gbarecomp::store_interp_into_arm_cpu(armv4t::CPUState const&, ArmCpuState&)",
+    41756
+   ],
+   [
+    "(anonymous namespace)::record_and_log_miss(unsigned long, bool)",
+    34527
+   ],
+   [
+    "runtime_tick",
+    33349
+   ],
+   [
+    "memmove",
+    26252
+   ],
+   [
+    "mALLOc",
+    26142
+   ],
+   [
+    "gba::GpioPort::active() const",
+    24016
+   ],
+   [
+    "gba::GbaBus::read16(unsigned long)",
+    23282
+   ],
+   [
+    "(anonymous namespace)::lookup_in(DispatchEntry const*, unsigned int, unsigned long, bool)",
+    18970
+   ],
+   [
+    "__newlib_lock_acquire_recursive",
+    15780
+   ],
+   [
+    "std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, std::_Rb_tree_node_base&)",
+    15295
+   ],
+   [
+    "sma2::h5_diag::retire_impl(unsigned long, unsigned long, bool)",
+    15038
+   ],
+   [
+    "__ssprint_r",
+    14280
+   ],
+   [
+    "std::_Rb_tree_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > std::_Rb_tree<unsigned long, std::pair<unsigned long const, (anonymous namespace)::MissRec>, std::_Select1st<std::pair<unsigned long const, (anonymous namespace)::MissRec> >, std::less<unsigned long>, std::allocator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > >::_M_emplace_hint_unique<std::piecewise_construct_t const&, std::tuple<unsigned long const&>, std::tuple<> >(std::_Rb_tree_const_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> >, std::piecewise_construct_t const&, std::tuple<unsigned long const&>&&, std::tuple<>&&)",
+    11825
+   ],
+   [
+    "__ssputs_r",
+    11200
+   ],
+   [
+    "mutex_unlock",
+    10882
+   ],
+   [
+    "(label) at map section",
+    10511
+   ],
+   [
+    "(anonymous namespace)::Sma2ParityBridgeBus::code_wait(unsigned long, bool, bool) const",
+    10046
+   ],
+   [
+    "armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*)::{lambda(unsigned long, unsigned long)#1}::operator()(unsigned long, unsigned long) const",
+    9149
+   ],
+   [
+    "gba_symbol_lookup",
+    7924
+   ],
+   [
+    "gba::GbaBus::write32(unsigned long, unsigned long)",
+    7906
+   ],
+   [
+    "snprintf",
+    6580
+   ],
+   [
+    "getenv",
+    6312
+   ],
+   [
+    "__newlib_lock_release_recursive",
+    6312
+   ],
+   [
+    "(anonymous namespace)::Sma2ParityBridgeBus::access_cycles(unsigned long, unsigned char, bool) const",
+    5714
+   ],
+   [
+    "mutex_lock_timed",
+    5684
+   ],
+   [
+    "gba::resolve_offset(unsigned long, gba::Region)",
+    5016
+   ],
+   [
+    "malloc",
+    4941
+   ],
+   [
+    "bus_write_u32",
+    4288
+   ],
+   [
+    "tick_devices(gba::GbaBus*, gba::GbaPpu*, unsigned long)",
+    4118
+   ],
+   [
+    "gba::GbaBus::read32(unsigned long)",
+    3308
+   ],
+   [
+    "armv4t::(anonymous namespace)::eval_op2(armv4t::CPUState const&, armv4t::Instr const&)",
+    3246
+   ],
+   [
+    "gbarecomp::load_arm_cpu_into_interp(ArmCpuState const&, armv4t::CPUState&)",
+    2964
+   ],
+   [
+    "bus_read_u32",
+    2901
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)",
+    2812
+   ],
+   [
+    "operator new(unsigned int)",
+    2562
+   ],
+   [
+    "(anonymous namespace)::dispatch_resolve(unsigned long)",
+    2299
+   ],
+   [
+    "std::_Rb_tree_decrement(std::_Rb_tree_node_base*)",
+    2252
+   ],
+   [
+    "__env_lock",
+    2104
+   ],
+   [
+    "__env_unlock",
+    2104
+   ],
+   [
+    "__popcountsi2",
+    1820
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)::{lambda()#5}::operator()() const",
+    1558
+   ],
+   [
+    "handler_irq9",
+    1436
+   ],
+   [
+    "armv4t::(anonymous namespace)::do_shift(unsigned long, armv4t::ShiftType, unsigned long, bool, bool)",
+    1072
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)::{lambda(unsigned long long)#1}::operator()(unsigned long long) const",
+    1019
+   ]
+  ]
+ },
+ "prefix_B16": {
+  "name": "B16",
+  "instructions": 880305,
+  "retire_impl": 272,
+  "bridge": 19,
+  "decode": 273,
+  "step": 264,
+  "irq_entries": 7,
+  "traps": 2,
+  "unique_pcs": 9450,
+  "unique_32B_lines": 911,
+  "unique_8KiB_dm_indices": 255,
+  "origin": {
+   "application (LTO)": 670901,
+   "toolchain libc/libgcc/libstdc++": 208394,
+   "KOS": 1008,
+   "REIOS/HLE trap (non-ELF)": 2
+  },
+  "functions_top50": [
+   [
+    "armv4t::ThumbDecoder::decode(unsigned short, unsigned long)",
+    127273
+   ],
+   [
+    "_findenv_r",
+    118864
+   ],
+   [
+    "runtime_bridge_interpret",
+    112521
+   ],
+   [
+    "armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*)",
+    84069
+   ],
+   [
+    "strncmp",
+    49970
+   ],
+   [
+    "gbarecomp::store_interp_into_arm_cpu(armv4t::CPUState const&, ArmCpuState&)",
+    41756
+   ],
+   [
+    "(anonymous namespace)::record_and_log_miss(unsigned long, bool)",
+    33850
+   ],
+   [
+    "runtime_tick",
+    31443
+   ],
+   [
+    "mALLOc",
+    26075
+   ],
+   [
+    "gba::GpioPort::active() const",
+    24016
+   ],
+   [
+    "gba::GbaBus::read16(unsigned long)",
+    23282
+   ],
+   [
+    "(anonymous namespace)::lookup_in(DispatchEntry const*, unsigned int, unsigned long, bool)",
+    18900
+   ],
+   [
+    "__newlib_lock_acquire_recursive",
+    15780
+   ],
+   [
+    "std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, std::_Rb_tree_node_base&)",
+    15295
+   ],
+   [
+    "sma2::h5_diag::retire_impl(unsigned long, unsigned long, bool)",
+    14983
+   ],
+   [
+    "std::_Rb_tree_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > std::_Rb_tree<unsigned long, std::pair<unsigned long const, (anonymous namespace)::MissRec>, std::_Select1st<std::pair<unsigned long const, (anonymous namespace)::MissRec> >, std::less<unsigned long>, std::allocator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > >::_M_emplace_hint_unique<std::piecewise_construct_t const&, std::tuple<unsigned long const&>, std::tuple<> >(std::_Rb_tree_const_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> >, std::piecewise_construct_t const&, std::tuple<unsigned long const&>&&, std::tuple<>&&)",
+    11825
+   ],
+   [
+    "mutex_unlock",
+    10831
+   ],
+   [
+    "(anonymous namespace)::Sma2ParityBridgeBus::code_wait(unsigned long, bool, bool) const",
+    10046
+   ],
+   [
+    "armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*)::{lambda(unsigned long, unsigned long)#1}::operator()(unsigned long, unsigned long) const",
+    9149
+   ],
+   [
+    "gba::GbaBus::write32(unsigned long, unsigned long)",
+    7906
+   ],
+   [
+    "getenv",
+    6312
+   ],
+   [
+    "__newlib_lock_release_recursive",
+    6312
+   ],
+   [
+    "(label) at map section",
+    6292
+   ],
+   [
+    "(anonymous namespace)::Sma2ParityBridgeBus::access_cycles(unsigned long, unsigned char, bool) const",
+    5714
+   ],
+   [
+    "mutex_lock_timed",
+    5684
+   ],
+   [
+    "gba::resolve_offset(unsigned long, gba::Region)",
+    5137
+   ],
+   [
+    "malloc",
+    4941
+   ],
+   [
+    "bus_write_u32",
+    4288
+   ],
+   [
+    "tick_devices(gba::GbaBus*, gba::GbaPpu*, unsigned long)",
+    4118
+   ],
+   [
+    "gba::GbaBus::read32(unsigned long)",
+    3308
+   ],
+   [
+    "armv4t::(anonymous namespace)::eval_op2(armv4t::CPUState const&, armv4t::Instr const&)",
+    3246
+   ],
+   [
+    "gbarecomp::load_arm_cpu_into_interp(ArmCpuState const&, armv4t::CPUState&)",
+    2964
+   ],
+   [
+    "bus_read_u32",
+    2901
+   ],
+   [
+    "operator new(unsigned int)",
+    2562
+   ],
+   [
+    "(anonymous namespace)::dispatch_resolve(unsigned long)",
+    2299
+   ],
+   [
+    "std::_Rb_tree_decrement(std::_Rb_tree_node_base*)",
+    2252
+   ],
+   [
+    "__env_lock",
+    2104
+   ],
+   [
+    "__env_unlock",
+    2104
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)",
+    1900
+   ],
+   [
+    "__popcountsi2",
+    1820
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)::{lambda()#5}::operator()() const",
+    1615
+   ],
+   [
+    "handler_irq9",
+    1436
+   ],
+   [
+    "armv4t::(anonymous namespace)::do_shift(unsigned long, armv4t::ShiftType, unsigned long, bool, bool)",
+    1072
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)::{lambda(unsigned long long)#1}::operator()(unsigned long long) const",
+    1019
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)::{lambda()#32}::operator()() const",
+    798
+   ],
+   [
+    "gba::GbaAudio::mix_one_sample(unsigned long, bool, gba::GbaAudio::ChannelTap*)",
+    752
+   ],
+   [
+    "bus_read_u8",
+    649
+   ],
+   [
+    "__udiv_qrnnd_16",
+    634
+   ],
+   [
+    "thd_schedule",
+    597
+   ],
+   [
+    "maple_vbl_irq_hnd",
+    560
+   ]
+  ]
+ },
+ "prefix_L0B16": {
+  "name": "L0B16",
+  "instructions": 999597,
+  "retire_impl": 272,
+  "bridge": 19,
+  "decode": 273,
+  "step": 264,
+  "irq_entries": 8,
+  "traps": 2,
+  "unique_pcs": 10099,
+  "unique_32B_lines": 981,
+  "unique_8KiB_dm_indices": 255,
+  "origin": {
+   "application (LTO)": 680503,
+   "toolchain libc/libgcc/libstdc++": 317940,
+   "KOS": 1152,
+   "REIOS/HLE trap (non-ELF)": 2
+  },
+  "functions_top50": [
+   [
+    "armv4t::ThumbDecoder::decode(unsigned short, unsigned long)",
+    127273
+   ],
+   [
+    "_findenv_r",
+    118864
+   ],
+   [
+    "runtime_bridge_interpret",
+    111230
+   ],
+   [
+    "armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*)",
+    84069
+   ],
+   [
+    "strncmp",
+    49970
+   ],
+   [
+    "_svfprintf_r",
+    46949
+   ],
+   [
+    "gbarecomp::store_interp_into_arm_cpu(armv4t::CPUState const&, ArmCpuState&)",
+    41756
+   ],
+   [
+    "(anonymous namespace)::record_and_log_miss(unsigned long, bool)",
+    34410
+   ],
+   [
+    "runtime_tick",
+    33349
+   ],
+   [
+    "memmove",
+    26252
+   ],
+   [
+    "mALLOc",
+    26142
+   ],
+   [
+    "gba::GpioPort::active() const",
+    24016
+   ],
+   [
+    "gba::GbaBus::read16(unsigned long)",
+    23282
+   ],
+   [
+    "(anonymous namespace)::lookup_in(DispatchEntry const*, unsigned int, unsigned long, bool)",
+    18900
+   ],
+   [
+    "__newlib_lock_acquire_recursive",
+    15780
+   ],
+   [
+    "std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, std::_Rb_tree_node_base&)",
+    15295
+   ],
+   [
+    "sma2::h5_diag::retire_impl(unsigned long, unsigned long, bool)",
+    14983
+   ],
+   [
+    "__ssprint_r",
+    14280
+   ],
+   [
+    "std::_Rb_tree_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > std::_Rb_tree<unsigned long, std::pair<unsigned long const, (anonymous namespace)::MissRec>, std::_Select1st<std::pair<unsigned long const, (anonymous namespace)::MissRec> >, std::less<unsigned long>, std::allocator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > >::_M_emplace_hint_unique<std::piecewise_construct_t const&, std::tuple<unsigned long const&>, std::tuple<> >(std::_Rb_tree_const_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> >, std::piecewise_construct_t const&, std::tuple<unsigned long const&>&&, std::tuple<>&&)",
+    11825
+   ],
+   [
+    "__ssputs_r",
+    11200
+   ],
+   [
+    "mutex_unlock",
+    10882
+   ],
+   [
+    "(label) at map section",
+    10511
+   ],
+   [
+    "(anonymous namespace)::Sma2ParityBridgeBus::code_wait(unsigned long, bool, bool) const",
+    10046
+   ],
+   [
+    "armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*)::{lambda(unsigned long, unsigned long)#1}::operator()(unsigned long, unsigned long) const",
+    9149
+   ],
+   [
+    "gba_symbol_lookup",
+    7924
+   ],
+   [
+    "gba::GbaBus::write32(unsigned long, unsigned long)",
+    7906
+   ],
+   [
+    "snprintf",
+    6580
+   ],
+   [
+    "getenv",
+    6312
+   ],
+   [
+    "__newlib_lock_release_recursive",
+    6312
+   ],
+   [
+    "(anonymous namespace)::Sma2ParityBridgeBus::access_cycles(unsigned long, unsigned char, bool) const",
+    5714
+   ],
+   [
+    "mutex_lock_timed",
+    5684
+   ],
+   [
+    "gba::resolve_offset(unsigned long, gba::Region)",
+    5016
+   ],
+   [
+    "malloc",
+    4941
+   ],
+   [
+    "bus_write_u32",
+    4288
+   ],
+   [
+    "tick_devices(gba::GbaBus*, gba::GbaPpu*, unsigned long)",
+    4118
+   ],
+   [
+    "gba::GbaBus::read32(unsigned long)",
+    3308
+   ],
+   [
+    "armv4t::(anonymous namespace)::eval_op2(armv4t::CPUState const&, armv4t::Instr const&)",
+    3246
+   ],
+   [
+    "gbarecomp::load_arm_cpu_into_interp(ArmCpuState const&, armv4t::CPUState&)",
+    2964
+   ],
+   [
+    "bus_read_u32",
+    2901
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)",
+    2812
+   ],
+   [
+    "operator new(unsigned int)",
+    2562
+   ],
+   [
+    "(anonymous namespace)::dispatch_resolve(unsigned long)",
+    2299
+   ],
+   [
+    "std::_Rb_tree_decrement(std::_Rb_tree_node_base*)",
+    2252
+   ],
+   [
+    "__env_lock",
+    2104
+   ],
+   [
+    "__env_unlock",
+    2104
+   ],
+   [
+    "__popcountsi2",
+    1820
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)::{lambda()#5}::operator()() const",
+    1558
+   ],
+   [
+    "handler_irq9",
+    1436
+   ],
+   [
+    "armv4t::(anonymous namespace)::do_shift(unsigned long, armv4t::ShiftType, unsigned long, bool, bool)",
+    1072
+   ],
+   [
+    "gbarecomp::run_game(int, char**, gbarecomp::RunOptions const&)::{lambda(unsigned long long)#1}::operator()(unsigned long long) const",
+    1019
+   ]
+  ]
+ }
+}

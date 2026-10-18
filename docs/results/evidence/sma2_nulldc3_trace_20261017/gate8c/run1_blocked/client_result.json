@@ -1,0 +1,64 @@
+{
+ "verdict": "ERROR",
+ "breakpoint": {},
+ "stop": {
+  "stopId": 4,
+  "reason": "breakpoint",
+  "bpId": 1,
+  "shpc": "0x8C01BEFA"
+ },
+ "start_state": {
+  "bytes": "50e7",
+  "guest": {
+   "R15": 134853240,
+   "CPSR": 1610612799,
+   "R": [
+    0,
+    50342853,
+    50342756,
+    50342756,
+    0,
+    0,
+    0,
+    0,
+    50342756,
+    67109376,
+    50340672,
+    0,
+    4294966784,
+    50363864,
+    134853242,
+    134853240
+   ],
+   "cycles": 56424200,
+   "vblank": 201,
+   "irq_entries": 192,
+   "irq_iret_depth": 0,
+   "h5_armed": 1,
+   "h5_complete": 0,
+   "h5_retired": 0,
+   "h5_interpreter_retired": 1,
+   "native_calls_total": 0
+  },
+  "checkpoint_ok_lines": 1,
+  "immediate_file_sha256": "50282ea4be8bea13b9063a38438dcde0b0b330bf0f3b929edf525bb112af32e6",
+  "pc": "0x8C01BEFA"
+ },
+ "start_checks": {
+  "stopped_by_breakpoint_at_start": true,
+  "opcode_bytes_50e7": true,
+  "checkpoint_immediate_file_identical": true,
+  "console_ok_lines_not_more_than_one": true,
+  "h5_armed": true,
+  "h5_not_complete": true,
+  "retired_zero": true,
+  "R15": false,
+  "CPSR": true,
+  "cycles": false,
+  "vblank": true,
+  "irq_entries": true,
+  "native_zero": true,
+  "interpreter_retired_zero": false
+ },
+ "error": "start-state validation failed: NOT arming (see start_checks)"
+}

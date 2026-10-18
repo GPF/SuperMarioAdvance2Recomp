@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+D=/tmp/nulldc3-sh4trace-gate8c-20261017
+exec env DISPLAY=:0 $D/nulldc3-emu --portable $D/portable --config audio:backend=none , config:Debug.SerialConsoleEnabled=yes , config:Dynarec.Enabled=0 , Debugger:Enabled=yes , Debugger:StartPaused=yes , Debugger:Port=55611 , config:Exit.AfterSeconds=1200 , config:Dcload.PcRoot=$D/media , config:Dcload.PcWritable=yes $D/B16.elf

@@ -1,0 +1,2 @@
+emulator pid 1041726: SIGTERM by exact PID, exited; port 55611 closed: 0
+2026-10-18T02:23:19Z

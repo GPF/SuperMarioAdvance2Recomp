@@ -1,0 +1,2 @@
+emulator pid 1042892: SIGTERM by exact PID, exited; port 55612 listeners: 0
+2026-10-18T02:30:18Z

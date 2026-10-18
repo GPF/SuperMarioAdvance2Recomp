@@ -1,0 +1,57 @@
+PASS magic/version/header - (b'N3IT', 1, 24)
+PASS status complete(2), interpreter(1), limit 1000000, count 1000002, dropped 0 - (2, 1, 1000000, 1000002, 0)
+PASS file size == 24+16*count - 16000056
+PASS record types: 1 start, 1000000 instruction, 1 end, no overflow/backend-exit - {1: 1, 2: 1000000, 3: 1}
+PASS start seq 0, instruction seq 1..1000000 contiguous, end seq 1000001 opcode 0
+PASS mode 1 on every record
+PASS first PC 0x8C01FEA2, opcode 0xE750 (bytes 50e7) == ELF word - ('0x8c01fea2', '0xe750')
+regions of executed PCs: {'elf-file': 999998, 'ram-dcload-reios': 2}
+PASS every ELF-file-backed PC: recorded opcode == ELF word - (999998, 'checked', 0, 'mismatch', [])
+non-ELF-file PCs by (region, 4K page): {('ram-dcload-reios', 573441): 2}
+PASS every interrupt entry after a delayed-conditional resumes at pc+2 (branch not taken, slot not executed) - 0
+explained: async interrupt entries at _vma_table_600: 8 ; REIOS HLE traps (opcode 0x085B in the dcload/REIOS RAM area, return to PR): 2
+irq entered after the slot of the delayed branch at 8c092284 (index 711474): later resumes at its target 8c092278 after 537 records
+PASS every interrupt entered after a delay slot later resumes at the branch target (taken-branch SPC) - 1
+PASS delayed branches: slot executes at pc+2 and the slot is not a branch - (151020, 'delayed branches', 0, 'bad', [])
+PASS direct delayed branch targets (bra/bsr, bt/s, bf/s) match their displacement - (126474, 'checked', 0, 'bad', [])
+PASS no unexplained discontinuities (non-branch not followed by pc+2; conditional not at pc+2/target; trapa) - (0, [])
+trace tail: last pc 0x8c055d3e (a delayed branch/slot split at the end is not checked)
+distinct functions 283
+  127273 12.73%  armv4t::ThumbDecoder::decode(unsigned short, unsigned long)
+  118864 11.89%  _findenv_r
+  111391 11.14%  runtime_bridge_interpret.constprop.0.isra.0
+   84069  8.41%  armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*) [clone .part.
+   49970  5.00%  strncmp
+   46949  4.69%  _svfprintf_r
+   41756  4.18%  gbarecomp::store_interp_into_arm_cpu(armv4t::CPUState const&, ArmCpuState&) [clone .constprop.0]
+   34527  3.45%  (anonymous namespace)::record_and_log_miss(unsigned long, bool) [clone .lto_priv.0]
+   33349  3.33%  runtime_tick
+   26252  2.63%  memmove
+   26142  2.61%  mALLOc.lto_priv.0
+   24016  2.40%  gba::GpioPort::active() const
+   23282  2.33%  gba::GbaBus::read16(unsigned long)
+   18970  1.90%  (anonymous namespace)::lookup_in(DispatchEntry const*, unsigned int, unsigned long, bool) [clone .lto_priv.0]
+   15780  1.58%  __newlib_lock_acquire_recursive
+   15295  1.53%  std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, std::_Rb_tree_nod
+   15038  1.50%  sma2::h5_diag::retire_impl(unsigned long, unsigned long, bool) [clone .isra.0]
+   14280  1.43%  __ssprint_r
+   11825  1.18%  std::_Rb_tree_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > std::_Rb_tree<unsigned
+   11200  1.12%  __ssputs_r
+   10882  1.09%  mutex_unlock
+   10046  1.00%  (anonymous namespace)::Sma2ParityBridgeBus::code_wait(unsigned long, bool, bool) const
+    9149  0.91%  armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*)::{lambda(unsi
+    7924  0.79%  gba_symbol_lookup.constprop.0
+    7906  0.79%  gba::GbaBus::write32(unsigned long, unsigned long)
+entries to retire_impl                  8c01fe58 : 273
+entries to runtime_bridge_interpret     8c055120 : 19
+entries to ThumbDecoder::decode         8c07a084 : 273
+entries to Interpreter::step.part.0     8c07abdc : 264
+entries to runtime_tick                 8c04171c : 273
+entries to dispatch_resolve             8c0839e0 : 19
+entries to runtime_dispatch             8c084854 : 19
+entries to capture_named                8c01fd30 : 0
+entries to sma2pmu_get_ticks            8c10c300 : 0
+PASS intended path present: retire_impl and runtime_bridge_interpret both entered
+PASS no window-end/capture code in the sample (capture_named never entered)
+GUEST INSTRUCTIONS RETIRED IN SAMPLE (retire_impl entries; the first window instruction retires at index 0): 273
+RESULT TRACE VALID

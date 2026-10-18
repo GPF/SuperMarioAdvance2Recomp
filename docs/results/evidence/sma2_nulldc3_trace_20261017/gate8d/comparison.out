@@ -1,0 +1,100 @@
+
+== FULL 1,000,000-instruction traces ==
+metric                                      B16        L0B16
+instructions                            1000000      1000000
+retire_impl                                 319          273
+decode                                      320          273
+step                                        311          264
+bridge                                       22           19
+irq_entries                                   8            8
+traps                                         2            2
+unique_pcs                                 9450        10099
+unique_32B_lines                            911          981
+unique_8KiB_dm_indices                      255          255
+execution origin (share of instructions):
+  KOS                                         0.12%    0.12%   (1152 / 1152)
+  REIOS/HLE trap (non-ELF)                    0.00%    0.00%   (2 / 2)
+  application (LTO)                          78.87%   68.09%   (788722 / 680906)
+  toolchain libc/libgcc/libstdc++            21.01%   31.79%   (210124 / 317940)
+top functions by instruction share (normalised names, each from its own symbol table):
+   14.91%  12.73%  armv4t::ThumbDecoder::decode(unsigned short, unsigned long)
+   13.19%  11.14%  runtime_bridge_interpret
+   11.89%  11.89%  _findenv_r
+   10.99%   8.41%  armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*
+    5.00%   5.00%  strncmp
+    4.89%   4.18%  gbarecomp::store_interp_into_arm_cpu(armv4t::CPUState const&, ArmCpuState&)
+    3.90%   3.45%  (anonymous namespace)::record_and_log_miss(unsigned long, bool)
+    3.68%   3.33%  runtime_tick
+    2.61%   2.61%  mALLOc
+    2.77%   2.40%  gba::GpioPort::active() const
+    2.73%   2.33%  gba::GbaBus::read16(unsigned long)
+    0.00%   4.69%  _svfprintf_r
+    2.22%   1.90%  (anonymous namespace)::lookup_in(DispatchEntry const*, unsigned int, unsigned long, bool)
+    1.76%   1.50%  sma2::h5_diag::retire_impl(unsigned long, unsigned long, bool)
+    1.58%   1.58%  __newlib_lock_acquire_recursive
+    1.53%   1.53%  std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, st
+    0.00%   2.63%  memmove
+    1.18%   1.18%  std::_Rb_tree_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > std::_R
+    1.21%   1.00%  (anonymous namespace)::Sma2ParityBridgeBus::code_wait(unsigned long, bool, bool) const
+    1.29%   0.91%  armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*
+    1.08%   1.09%  mutex_unlock
+    1.24%   0.79%  gba::GbaBus::write32(unsigned long, unsigned long)
+    0.69%   1.05%  (label) at map section
+    0.00%   1.43%  __ssprint_r
+    0.80%   0.57%  (anonymous namespace)::Sma2ParityBridgeBus::access_cycles(unsigned long, unsigned char, bool) c
+    0.63%   0.63%  getenv
+    0.63%   0.63%  __newlib_lock_release_recursive
+    0.65%   0.50%  gba::resolve_offset(unsigned long, gba::Region)
+    0.57%   0.57%  mutex_lock_timed
+    0.00%   1.12%  __ssputs_r
+
+common comparable prefix: guest instructions up to retire_impl entry #273 in both (B16 sample has 319 entries, L0B16 273); SH-4 index cut B16 880305, L0B16 999597
+
+== COMMON GUEST PREFIX (273 guest retire entries) ==
+metric                                      B16        L0B16
+instructions                             880305       999597
+retire_impl                                 272          272
+decode                                      273          273
+step                                        264          264
+bridge                                       19           19
+irq_entries                                   7            8
+traps                                         2            2
+unique_pcs                                 9450        10099
+unique_32B_lines                            911          981
+unique_8KiB_dm_indices                      255          255
+execution origin (share of instructions):
+  KOS                                         0.11%    0.12%   (1008 / 1152)
+  REIOS/HLE trap (non-ELF)                    0.00%    0.00%   (2 / 2)
+  application (LTO)                          76.21%   68.08%   (670901 / 680503)
+  toolchain libc/libgcc/libstdc++            23.67%   31.81%   (208394 / 317940)
+top functions by instruction share (normalised names, each from its own symbol table):
+   14.46%  12.73%  armv4t::ThumbDecoder::decode(unsigned short, unsigned long)
+   13.50%  11.89%  _findenv_r
+   12.78%  11.13%  runtime_bridge_interpret
+    9.55%   8.41%  armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*
+    5.68%   5.00%  strncmp
+    4.74%   4.18%  gbarecomp::store_interp_into_arm_cpu(armv4t::CPUState const&, ArmCpuState&)
+    3.85%   3.44%  (anonymous namespace)::record_and_log_miss(unsigned long, bool)
+    3.57%   3.34%  runtime_tick
+    2.96%   2.62%  mALLOc
+    2.73%   2.40%  gba::GpioPort::active() const
+    0.00%   4.70%  _svfprintf_r
+    2.64%   2.33%  gba::GbaBus::read16(unsigned long)
+    2.15%   1.89%  (anonymous namespace)::lookup_in(DispatchEntry const*, unsigned int, unsigned long, bool)
+    1.79%   1.58%  __newlib_lock_acquire_recursive
+    1.74%   1.53%  std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, st
+    1.70%   1.50%  sma2::h5_diag::retire_impl(unsigned long, unsigned long, bool)
+    0.00%   2.63%  memmove
+    1.34%   1.18%  std::_Rb_tree_iterator<std::pair<unsigned long const, (anonymous namespace)::MissRec> > std::_R
+    1.23%   1.09%  mutex_unlock
+    1.14%   1.01%  (anonymous namespace)::Sma2ParityBridgeBus::code_wait(unsigned long, bool, bool) const
+    1.04%   0.92%  armv4t::Interpreter::step(armv4t::CPUState&, armv4t::Bus&, armv4t::Instr const&, unsigned long*
+    0.71%   1.05%  (label) at map section
+    0.90%   0.79%  gba::GbaBus::write32(unsigned long, unsigned long)
+    0.00%   1.43%  __ssprint_r
+    0.72%   0.63%  getenv
+    0.72%   0.63%  __newlib_lock_release_recursive
+    0.65%   0.57%  (anonymous namespace)::Sma2ParityBridgeBus::access_cycles(unsigned long, unsigned char, bool) c
+    0.65%   0.57%  mutex_lock_timed
+    0.00%   1.12%  __ssputs_r
+    0.58%   0.50%  gba::resolve_offset(unsigned long, gba::Region)

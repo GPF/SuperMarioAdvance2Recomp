@@ -1,0 +1,27 @@
+PASS ELF32 little-endian SH - e_machine 42
+PASS entry 0x8C010000 - 0x8c010000
+PASS every PT_LOAD at or above 0x8C010000 (nothing over the dcload area 0x8C004000-0x8C00FFFF) - 8c010000-8c0cb064
+PASS image ends below 0x8D000000 (fits the 16 MiB RAM) - 0x8c0cb064
+PASS symbol dcload_syscall_native
+PASS symbol syscall_dcload_detected
+PASS symbol fs_dcload_init_console
+PASS symbol fs_dcload_open
+PASS symbol fs_dcload_read
+PASS symbol fs_dcload_seek
+PASS symbol fs_dcload_stat
+PASS symbol fs_dcload_rename
+PASS symbol fs_dcload_unlink
+PASS symbol dcload_init
+PASS syscall_dcload_detected reads 0x8C004004 and compares with 0xDEADBEEF
+PASS dcload_syscall_native loads the vector from 0x8C004008, waits on FIFO_STATUS 0xA05F688C, calls it with jsr
+PASS fs_dcload_init_console probes assign_wrkmem with command 14 and tests -1
+PASS string /pc/fixture/hello.txt
+PASS string /pc/fixture/pattern200000.bin
+PASS string DCLOAD_FIXTURE
+PASS string RESULT
+PASS no SMA2/GBA content in the fixture
+PASS every check name of check_output.py is in the program
+PASS make_fixture_dir.py pattern(200000, 11) has the FNV-1a the C generator computes - c835b074 vs c835b074
+size:  213056	   5596	 541668	 760320	  b9a00	/tmp/nulldc3-sh4trace-gate8a-20261017/kos_fixture/dcload_fixture.elf
+sha256: 3dd604623f8f94c46a80476b0cc66c86c201660f5881447089d6db8ad436b23d
+RESULT ALL STATIC CHECKS PASS
