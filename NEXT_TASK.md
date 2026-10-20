@@ -1,3 +1,21 @@
+# Runtime SH-4 dynarec under nullDC3 — HOLD
+
+The recovered bounded AOT diagnostic remains accepted only for its single
+generated Thumb `BX LR` entry (`0x0809DFBE`): physical Dreamcast executed one
+native entry, native/interpreter cycles were 11/11, compared state matched,
+`SMA2_BOUNDED_AOT_DIAG=PASS`, and the program returned 0. Preserve the exact
+343-entry corpus and its provenance.
+
+Runtime SH-4 dynarec validation is **NO-GO**. The isolated build linked with
+`SMA2_SH4_DYNAREC=ON`, but nullDC3 under REIOS faulted in
+`___do_global_ctors_aux` at PC `0x00000002` before SMA2 `main()`, backend init,
+or any JIT block. The fresh-run harness and hashes are recorded in
+[`SMA2_BOUNDED_AOT_RECOVERY_AND_DYNAREC_20261020.md`](docs/results/SMA2_BOUNDED_AOT_RECOVERY_AND_DYNAREC_20261020.md).
+Next work: determine why this ELF fails during REIOS/KOS constructor startup,
+then rerun the same isolated dynarec diagnostic. Do not use the static AOT leaf
+as a substitute for runtime dynarec evidence. Do not launch physical hardware
+without separate authorization.
+
 # Current SMA2 renderer handoff — frame-201 pixel gates CLOSED
 
 The nullDC3 frame-201 all-native and mixed-row pixel-comparison gates are

@@ -13,6 +13,8 @@
 - Do not add speculative SH-4 optimization without measurements.
 - Do not modify sibling repositories without explicit authorization. Shared framework work belongs in GBARecomp; do not copy mGBADC, gpSP, or Bruce runtime code into this title project.
 - Claim Dreamcast support only after validation on physical hardware with recorded configuration and results.
+- Treat interpreter, static generated AOT, runtime SH-4 dynarec, and native RAM-copy templates as separate execution paths; require path-specific runtime instrumentation before claiming any path ran.
+- Treat nullDC3 results as emulator evidence only. Record the guest diagnostic verdict separately from the emulator process status, and reject missing verdicts even when the emulator exits 0.
 - Use explicit GO/NO-GO gates. Stop on correctness mismatches, hidden fallback, unresolved ABI/relocation requirements, or a demonstrated memory-budget failure.
 
 # Repository Boundaries and Preservation

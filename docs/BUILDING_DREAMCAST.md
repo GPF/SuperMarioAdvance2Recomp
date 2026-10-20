@@ -141,6 +141,28 @@ installed. See the recorded
    and full runtime memory headroom remain unverified. Keep observations and
    logs in [port status](SMA2_DREAMCAST_PORT_STATUS.md).
 
+## Optional runtime dynarec diagnostic
+
+`SMA2_SH4_DYNAREC=ON` links the runtime ARM/Thumb-to-SH-4 backend; it defaults
+OFF. It is separate from `SMA2_SH4_AOT_POC` (static generated AOT) and the
+bounded cart AOT dispatch table. The Dreamcast runner still defaults to the
+interpreter. A dynarec diagnostic build reads `/pc/sma2_cpu_backend.txt`; a
+first non-space `j` selects the runtime dynarec. Runtime evidence must include
+`sma2_cpu_backend=sh4-dynarec`, successful JIT initialization, nonzero native
+block execution, and the diagnostic's final stage summary. A linked backend or
+ELF symbol alone is not execution evidence.
+
+The fresh-run nullDC3 workflow is
+[`tools/run_nulldc3_dynarec_diagnostic.py`](../tools/run_nulldc3_dynarec_diagnostic.py).
+It requires a new output directory, verifies ELF and asset hashes, stages
+verified BIOS/ROM assets as symlinks, captures emulator output, enforces a
+bounded run, and reports guest diagnostic evidence separately from emulator
+process status. It rejects missing diagnostic output even when nullDC3 returns
+zero. On 2026-10-20 the dynarec ELF linked, but this workflow did not reach SMA2
+`main()` under REIOS: nullDC3 faulted in `___do_global_ctors_aux` at PC 0x2.
+Dynarec execution remains unvalidated; see the
+[recovery postmortem](results/SMA2_BOUNDED_AOT_RECOVERY_AND_DYNAREC_20261020.md).
+
 The interpreter-first KOS build is title-local. Reusable runtime/backend work
 still belongs in GBARecomp; compatibility adaptations for this build are staged
 through the reversible SMA2 overlay rather than edits to that checkout.
