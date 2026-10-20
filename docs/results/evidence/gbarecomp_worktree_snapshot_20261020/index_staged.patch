@@ -1,0 +1,1730 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b8e19bd..487fc7d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -24,6 +24,10 @@ set_property(CACHE GBARECOMP_DMA_RAM_IMPLEMENTATION PROPERTY STRINGS LLE HLE)
+ if(NOT GBARECOMP_DMA_RAM_IMPLEMENTATION MATCHES "^(LLE|HLE)$")
+     message(FATAL_ERROR "GBARECOMP_DMA_RAM_IMPLEMENTATION must be LLE or HLE")
+ endif()
++# IWRAM code-watch store barrier (GbaBus::write8/16/32). ON is the only correctness-safe setting for a game that
++# AOT-compiles relocated IWRAM code. OFF compiles the per-store check out and exists SOLELY as a controlled
++# performance ceiling for benchmarking; such a build must never be used for gameplay or correctness acceptance.
++option(GBARECOMP_IWRAM_CODE_WATCH "Compile the IWRAM code-watch store barrier into GbaBus" ON)
+ 
+ # Large generated corpora are expensive to rebuild in fresh build trees.
+ # Reuse identical objects automatically when ccache/sccache is available, while
+@@ -324,6 +328,12 @@ endif()
+ if(GBARECOMP_DMA_RAM_IMPLEMENTATION STREQUAL "HLE")
+     target_compile_definitions(gbarecomp_gba PUBLIC GBARECOMP_DMA_RAM_HLE=1)
+ endif()
++if(GBARECOMP_IWRAM_CODE_WATCH)
++    target_compile_definitions(gbarecomp_gba PUBLIC GBARECOMP_IWRAM_CODE_WATCH=1)
++else()
++    message(WARNING "GBARECOMP_IWRAM_CODE_WATCH=OFF: IWRAM code-watch barrier compiled out (benchmark ceiling only)")
++    target_compile_definitions(gbarecomp_gba PUBLIC GBARECOMP_IWRAM_CODE_WATCH=0)
++endif()
+ # src/debug for snapshot.h — the save-state SnapshotWriter/Reader are
+ # header-only, so this is an include-path dependency only (gbarecomp_gba
+ # does NOT link gbarecomp_debug; that would invert the layering).
+@@ -394,6 +404,7 @@ add_library(gbarecomp_runtime STATIC
+     src/runtime/bios_hle.cpp
+     src/runtime/generated_dispatch.cpp
+     src/runtime/runtime_bus_bridge.cpp
++    src/runtime/iwram_code_guard.cpp
+     src/runtime/arm_cpu_bridge.cpp
+     src/runtime/overlay_emit.cpp
+     src/runtime/overlay_loader.cpp
+@@ -1014,6 +1025,27 @@ add_gbarecomp_runtime_stack_test(vertical_obj_tests tests/ppu/vertical_obj_test.
+ add_gbarecomp_runtime_stack_test(dma_tests tests/dma/test_main.cpp)
+ add_gbarecomp_runtime_stack_test(dma_bulk_tests tests/dma/bulk_test_main.cpp)
+ add_gbarecomp_runtime_stack_test(timer_tests tests/timers/test_main.cpp)
++add_gbarecomp_runtime_stack_test(iwram_guard_tests tests/iwram_guard/test_main.cpp)
++target_include_directories(iwram_guard_tests PRIVATE src/runtime src/armv4t src/gba)
++
++# Native-island mode predicate/dispatch semantics (own dispatch table, so it does not use the empty stub).
++add_executable(iwram_island_tests tests/iwram_guard/island_test.cpp)
++target_include_directories(iwram_island_tests PRIVATE src/debug src/runtime src/armv4t src/gba)
++target_link_gbarecomp_runtime_stack(iwram_island_tests)
++add_test(NAME iwram_island_tests COMMAND iwram_island_tests)
++
++# Compile-time raw-writer guard: the mutable GbaBus::iwram_ptr() is deleted. The GREEN object (read-only access
++# and explicitly invalidating iwram_write_ptr) must compile; the RED object (old mutable access) must not.
++add_library(iwram_raw_writer_green OBJECT EXCLUDE_FROM_ALL tests/iwram_guard/green_ptrs.cpp)
++target_link_libraries(iwram_raw_writer_green PRIVATE gbarecomp_gba)
++add_library(iwram_raw_writer_red OBJECT EXCLUDE_FROM_ALL tests/iwram_guard/red_mutable_ptr.cpp)
++target_link_libraries(iwram_raw_writer_red PRIVATE gbarecomp_gba)
++add_test(NAME iwram_raw_writer_green
++         COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target iwram_raw_writer_green)
++add_test(NAME iwram_raw_writer_red
++         COMMAND ${CMAKE_COMMAND} -DCMAKE_BIN=${CMAKE_COMMAND} -DBUILD_DIR=${CMAKE_BINARY_DIR}
++                 -DTARGET=iwram_raw_writer_red "-DEXPECT=use of deleted function"
++                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/iwram_guard/expect_compile_error.cmake)
+ 
+ add_executable(gpio_tests tests/gpio/test_main.cpp)
+ target_link_libraries(gpio_tests PRIVATE gbarecomp_gba)
+@@ -1027,11 +1059,15 @@ add_executable(irq_tests tests/irq/test_main.cpp)
+ target_link_libraries(irq_tests PRIVATE gbarecomp_gba)
+ add_test(NAME irq_tests COMMAND irq_tests)
+ 
+-add_executable(ppu_smoke_tests tests/ppu_smoke/test_main.cpp)
+-target_include_directories(ppu_smoke_tests PRIVATE src/runtime src/debug)
+-target_link_libraries(ppu_smoke_tests PRIVATE gbarecomp_gba)
+-gbarecomp_target_link_host_stack(ppu_smoke_tests PRIVATE)
+-add_test(NAME ppu_smoke_tests COMMAND ppu_smoke_tests)
++# irq_bridge_tests — IRQ-continuation boundary of the interpreter miss bridge
++# (own two-entry cart dispatch table; does not use the empty dispatch stub).
++add_executable(irq_bridge_tests tests/irq_bridge/test_main.cpp)
++target_include_directories(irq_bridge_tests PRIVATE src/debug src/runtime)
++target_link_gbarecomp_runtime_stack(irq_bridge_tests)
++add_test(NAME irq_bridge_tests COMMAND irq_bridge_tests)
++
++add_gbarecomp_runtime_stack_test(ppu_smoke_tests tests/ppu_smoke/test_main.cpp)
++target_include_directories(ppu_smoke_tests PRIVATE src/runtime)
+ 
+ add_executable(save_config_tests
+     tests/runtime/save_config_test.cpp
+diff --git a/src/armv4t/runtime_arm.cpp b/src/armv4t/runtime_arm.cpp
+index 24980dc..a4882fc 100644
+--- a/src/armv4t/runtime_arm.cpp
++++ b/src/armv4t/runtime_arm.cpp
+@@ -63,6 +63,8 @@ extern "C" RuntimeBusReadOverride g_runtime_bus_read_override = nullptr;
+ extern "C" RuntimeRamDispatchHook g_runtime_ram_dispatch_hook = nullptr;
+ extern "C" RuntimeRamCodeView g_runtime_ram_code_view = nullptr;
+ extern "C" RuntimeForceInterpHook g_runtime_force_interp_hook = nullptr;
++extern "C" void (*g_runtime_post_restore_hook)(void) = nullptr;
++extern "C" int g_runtime_native_island = 0;   // see runtime_arm.h   // scratch: lets a validity guard re-assert itself after a context restore
+ extern "C" int g_runtime_force_interp_step_active = 0;
+ 
+ // VBlank-start counter (defined in src/runtime/runtime_bus_bridge.cpp).
+@@ -955,6 +957,8 @@ const DispatchEntry* dispatch_resolve(uint32_t target_pc) {
+         g_runtime_force_interp_hook(pc, thumb ? 1 : 0)) {
+         if (g_resumable_context)
+             throw std::logic_error("multiplayer requires native dispatch coverage");
++        // Native-island mode: hand the PC back to the runner (it interprets the live bytes) instead of bridging.
++        if (g_runtime_native_island) return nullptr;
+         runtime_bridge_interpret(pc, thumb, 0u, 0u);
+         return nullptr;
+     }
+@@ -1006,6 +1010,8 @@ const DispatchEntry* dispatch_resolve(uint32_t target_pc) {
+     // since armv4t must not depend on the runtime lib). When the feature is
+     // off this is a single bool check and returns 0.
+     if (overlay_try_dispatch(pc, thumb ? 1 : 0)) return nullptr;
++    // Native-island mode: the runner (force-interp) owns everything outside the island; a miss simply returns.
++    if (g_runtime_native_island) return nullptr;
+     if (g_resumable_context) {
+         char message[96];
+         std::snprintf(message,sizeof(message),"multiplayer native dispatch entry is missing: %08x (%s)",
+@@ -1097,6 +1103,16 @@ extern "C" uint32_t runtime_native_arm_immediate(uint32_t pc) {
+     return rotate ? (value>>rotate)|(value<<(32u-rotate)) : value;
+ }
+ 
++extern "C" int g_force_interp;   // runtime lib (runtime_arm_default_aborts.cpp)
++extern "C" int runtime_island_wants_native(uint32_t pc, int thumb) {
++    if (!g_runtime_native_island || !g_force_interp || thumb) return 0;
++    pc &= ~1u;
++    if ((pc >> 24) != 3u) return 0;
++    if (!runtime_has_static_entry(pc, 0)) return 0;
++    if (g_runtime_force_interp_hook && g_runtime_force_interp_hook(pc, 0)) return 0;   // stale/unvalidated image: interpret
++    return 1;
++}
++
+ extern "C" unsigned long long g_runtime_call_return_evictions = 0;
+ 
+ extern "C" void runtime_call_push_return(uint32_t return_pc) {
+@@ -1679,7 +1695,10 @@ extern "C" void runtime_irq(uint32_t return_address) {
+     auto drive_irq_instruction = []() {
+         const uint32_t pc = g_cpu.R[15] & ~1u;
+         const int thumb = (g_cpu.cpsr & CPSR_T_BIT) != 0;
+-        if (g_force_interp ||
++        // Native-island mode: the IWRAM mixer is called from inside the IRQ handler, so the island applies here too.
++        if (g_runtime_native_island && runtime_island_wants_native(pc, thumb)) {
++            runtime_dispatch(g_cpu.R[15]);
++        } else if (g_force_interp ||
+             (g_runtime_force_interp_hook &&
+              g_runtime_force_interp_hook(pc, thumb))) {
+             runtime_force_interp_step();
+@@ -1768,6 +1787,7 @@ void runtime_restore_arm_context(const RuntimeArmContext& in) {
+     g_runtime_force_interp_step_active = 0;
+     g_runtime_fn_entry_hook = in.entry_hook;
+     g_bios_hle_hook = in.bios_hook;
++    if (g_runtime_post_restore_hook) g_runtime_post_restore_hook();
+ }
+ void runtime_set_resumable_context(RuntimeArmContext* context) {
+     g_resumable_context = context;
+diff --git a/src/armv4t/runtime_arm.h b/src/armv4t/runtime_arm.h
+index db6dc3c..c0da803 100644
+--- a/src/armv4t/runtime_arm.h
++++ b/src/armv4t/runtime_arm.h
+@@ -76,6 +76,16 @@ extern RuntimeRamDispatchHook g_runtime_ram_dispatch_hook;
+ // mutable region without passing through runtime_dispatch first.
+ typedef int (*RuntimeForceInterpHook)(uint32_t pc, int thumb);
+ extern RuntimeForceInterpHook g_runtime_force_interp_hook;
++extern "C" void (*g_runtime_post_restore_hook)(void);
++// Native-island mode (opt-in, default 0). Meaningful only with the force-interpreter backend: the runner interprets
++// every instruction EXCEPT at a statically-recompiled ARM entry in IWRAM whose force-interp hook says "native OK";
++// there it dispatches the generated function, and any dispatch that would otherwise MISS (the function's exit, or a
++// stale-image hook veto) returns to the runner instead of entering the self-heal bridge, so the runner stays in
++// control one instruction at a time. Used by relocated-IWRAM AOT (see iwram_code_guard).
++extern "C" int g_runtime_native_island;
++// 1 when the runner should dispatch the generated function at (pc, thumb) instead of force-interpreting it:
++// island mode on, force-interp backend, ARM pc in IWRAM with a static entry, and the guard hook does not veto it.
++int runtime_island_wants_native(uint32_t pc, int thumb);
+ extern int g_runtime_force_interp_step_active;
+ 
+ // Only exact PCs opted in by the recompiler config call this helper. The
+diff --git a/src/debug/cosim_state.cpp b/src/debug/cosim_state.cpp
+index 81cd138..0ea3487 100644
+--- a/src/debug/cosim_state.cpp
++++ b/src/debug/cosim_state.cpp
+@@ -104,7 +104,7 @@ uint64_t state_hash(SubHashes* sub) {
+     // Apply any pending gate-4 injection to the live machine so it folds into the
+     // hash exactly like a real divergence would.
+     if (s_inj_region == 0 && bus && s_inj_off < 32u * 1024u) {
+-        bus->iwram_ptr()[s_inj_off] ^= s_inj_xor;
++        bus->iwram_write_ptr("cosim_inject")[s_inj_off] ^= s_inj_xor;
+     } else if (s_inj_region == 1 && bus && s_inj_off < 256u * 1024u) {
+         bus->ewram_ptr()[s_inj_off] ^= s_inj_xor;
+     }
+@@ -118,7 +118,7 @@ uint64_t state_hash(SubHashes* sub) {
+     s.cpu = hash_cpu(g_cpu);
+ 
+     if (bus) {
+-        s.iwram = fnv(kFnvOff, bus->iwram_ptr(), 32u * 1024u);
++        s.iwram = fnv(kFnvOff, bus->iwram_read_ptr(), 32u * 1024u);
+         s.ewram = fnv(kFnvOff, bus->ewram_ptr(), 256u * 1024u);
+         s.vram  = fnv(kFnvOff, bus->vram_ptr(), 96u * 1024u);
+         s.pal   = fnv(kFnvOff, bus->pal_ptr(), 1024u);
+diff --git a/src/debug/tcp_debug_server.cpp b/src/debug/tcp_debug_server.cpp
+index af90f32..f459c5c 100644
+--- a/src/debug/tcp_debug_server.cpp
++++ b/src/debug/tcp_debug_server.cpp
+@@ -591,7 +591,7 @@ void cmd_state_hash(const TcpDebugServer::Context& ctx, std::string& out) {
+         for (std::size_t i = 0; i < n; ++i) { h ^= p[i]; h *= 1099511628211ull; }
+         return h;
+     };
+-    uint64_t iw = fnv(ctx.bus->iwram_ptr(), 32 * 1024);
++    uint64_t iw = fnv(ctx.bus->iwram_read_ptr(), 32 * 1024);
+     uint64_t ew = fnv(ctx.bus->ewram_ptr(), 256 * 1024);
+     uint64_t vr = fnv(ctx.bus->vram_ptr(), 96 * 1024);
+     uint64_t pa = fnv(ctx.bus->pal_ptr(), 1024);
+@@ -796,7 +796,7 @@ void dispatch(const TcpDebugServer::Context& ctx, std::string_view req,
+     }
+     if (contains("\"read_iwram\"")) {
+         if (!ctx.bus) { emit_error(out, "bus unavailable"); return; }
+-        cmd_read_region(ctx.bus->iwram_ptr(), 32 * 1024, req, out, 0x03000000u);
++        cmd_read_region(ctx.bus->iwram_read_ptr(), 32 * 1024, req, out, 0x03000000u);
+         return;
+     }
+     // Debug/validation poke: {"cmd":"write_mem","addr":A,"hex":"0a0b.."}
+diff --git a/src/debug/ws_provenance.cpp b/src/debug/ws_provenance.cpp
+index b08a01a..020e66d 100644
+--- a/src/debug/ws_provenance.cpp
++++ b/src/debug/ws_provenance.cpp
+@@ -101,7 +101,7 @@ bool ws_provenance_dump(const char* path, int extra_cols_per_side) {
+     gba::GbaBus* bus = active_bus();
+     if (!bus) return false;
+ 
+-    const uint8_t* iwram = bus->iwram_ptr();      // base = 0x03000000
++    const uint8_t* iwram = bus->iwram_read_ptr();      // base = 0x03000000
+     const uint8_t* io = bus->io().raw();          // 1 KB IO page
+ 
+     auto iw32 = [&](uint32_t guest) -> uint32_t {
+diff --git a/src/debug/ws_sidecar.cpp b/src/debug/ws_sidecar.cpp
+index 9adac7a..1ad3482 100644
+--- a/src/debug/ws_sidecar.cpp
++++ b/src/debug/ws_sidecar.cpp
+@@ -91,7 +91,7 @@ uint16_t rd16(gba::GbaBus* bus, uint32_t addr) {
+     if (addr >= 0x02000000u && addr < 0x02040000u) {
+         p = bus->ewram_ptr(); off = addr - 0x02000000u; size = 0x40000u;
+     } else if (addr >= 0x03000000u && addr < 0x03008000u) {
+-        p = bus->iwram_ptr(); off = addr - 0x03000000u; size = 0x8000u;
++        p = bus->iwram_read_ptr(); off = addr - 0x03000000u; size = 0x8000u;
+     } else if (addr >= 0x06000000u && addr < 0x06018000u) {
+         p = bus->vram_ptr(); off = addr - 0x06000000u; size = 0x18000u;
+     }
+@@ -106,7 +106,7 @@ uint32_t rd32(gba::GbaBus* bus, uint32_t addr) {
+ // Side-effect-free IWRAM u32 write (for transient gBGTilemapBuffers redirect).
+ void wr32_iwram(gba::GbaBus* bus, uint32_t addr, uint32_t v) {
+     if (addr < 0x03000000u || addr + 3u >= 0x03008000u) return;
+-    uint8_t* p = bus->iwram_ptr() + (addr - 0x03000000u);
++    uint8_t* p = bus->iwram_write_ptr("ws_sidecar_wr32") + (addr - 0x03000000u);
+     p[0] = v & 0xFF; p[1] = (v >> 8) & 0xFF;
+     p[2] = (v >> 16) & 0xFF; p[3] = (v >> 24) & 0xFF;
+ }
+diff --git a/src/gba/gba_bus.cpp b/src/gba/gba_bus.cpp
+index 6571d92..c403223 100644
+--- a/src/gba/gba_bus.cpp
++++ b/src/gba/gba_bus.cpp
+@@ -58,6 +58,7 @@ void GbaBus::serialize(gbarecomp::debug::SnapshotWriter& w) const {
+ void GbaBus::deserialize(gbarecomp::debug::SnapshotReader& r) {
+     r.bytes(ewram_.data(), ewram_.size());
+     r.bytes(iwram_.data(), iwram_.size());
++    iwram_code_invalidate("deserialize");
+     r.bytes(pal_.data(),   pal_.size());
+     r.bytes(vram_.data(),  vram_.size());
+     r.bytes(oam_.data(),   oam_.size());
+@@ -430,7 +431,7 @@ void GbaBus::write8(uint32_t addr, uint8_t v) {
+     if (write_observer_ && observe_write(region, off, addr, 1, v)) return;
+     switch (region) {
+         case Region::Ewram: ewram_[off] = v; return;
+-        case Region::Iwram: iwram_[off] = v; return;
++        case Region::Iwram: GBARECOMP_IWRAM_WATCH(off, 1, v); iwram_[off] = v; return;
+         case Region::Pal:   pal_[off]   = v; return;
+         case Region::Vram:
+             if (off < vram_.size()) vram_[off] = v;
+@@ -491,7 +492,7 @@ void GbaBus::write16(uint32_t addr, uint16_t v) {
+     if (write_observer_ && observe_write(region, off, addr, 2, v)) return;
+     switch (region) {
+         case Region::Ewram: store_u16(&ewram_[off], v); return;
+-        case Region::Iwram: store_u16(&iwram_[off], v); return;
++        case Region::Iwram: GBARECOMP_IWRAM_WATCH(off, 2, v); store_u16(&iwram_[off], v); return;
+         case Region::Pal:   store_u16(&pal_[off], v);   return;
+         case Region::Vram:
+             if (off + 1 < vram_.size()) store_u16(&vram_[off], v);
+@@ -546,6 +547,7 @@ void GbaBus::write16(uint32_t addr, uint16_t v) {
+ 
+ bool GbaBus::dma_copy_ram(uint32_t src, uint32_t dst, uint32_t bytes) {
+     if (write_observer_ || !bytes) return false;
++    if (watch_hi_ && (dst >> 24) == 3u) return false;   // decline: per-element stores hit the barrier
+     auto span = [&](uint32_t addr) -> std::pair<uint8_t*, std::size_t> {
+         if ((addr >> 24) == 2u) {
+             const uint32_t off = addr & 0x3FFFFu;
+@@ -571,7 +573,7 @@ void GbaBus::write32(uint32_t addr, uint32_t v) {
+     if (write_observer_ && observe_write(region, off, addr, 4, v)) return;
+     switch (region) {
+         case Region::Ewram: store_u32(&ewram_[off], v); return;
+-        case Region::Iwram: store_u32(&iwram_[off], v); return;
++        case Region::Iwram: GBARECOMP_IWRAM_WATCH(off, 4, v); store_u32(&iwram_[off], v); return;
+         case Region::Pal:   store_u32(&pal_[off], v);   return;
+         case Region::Vram:
+             if (off + 3 < vram_.size()) store_u32(&vram_[off], v);
+diff --git a/src/gba/gba_bus.h b/src/gba/gba_bus.h
+index 4ebe7cf..a473a4c 100644
+--- a/src/gba/gba_bus.h
++++ b/src/gba/gba_bus.h
+@@ -179,7 +179,12 @@ public:
+     // Region accessors — useful for tests, debug snapshots, and the
+     // PPU (which reads VRAM/OAM/PAL directly to render).
+     uint8_t* ewram_ptr() { return ewram_.data(); }
+-    uint8_t* iwram_ptr() { return iwram_.data(); }
++    // IWRAM raw access is split so a writer cannot be added silently: the mutable
++    // iwram_ptr() is deleted (compile error for every non-const caller); writers
++    // must use iwram_write_ptr(why), which invalidates the IWRAM code watch first.
++    uint8_t* iwram_ptr() = delete;
++    uint8_t* iwram_write_ptr(const char* why) { iwram_code_invalidate(why); return iwram_.data(); }
++    const uint8_t* iwram_read_ptr() const { return iwram_.data(); }
+     uint8_t* pal_ptr()   { return pal_.data();   }
+     uint8_t* vram_ptr()  { return vram_.data();  }
+     uint8_t* oam_ptr()   { return oam_.data();   }
+@@ -277,8 +282,53 @@ public:
+         return previous;
+     }
+ 
++    // ── IWRAM code watch (scratch PoC) ─────────────────────────────────
++    // Optional exact write barrier for relocated IWRAM AOT code. When armed
++    // (hi > lo) every bus store that overlaps [lo,hi) AND changes a byte calls
++    // `cb(user, why)`. Bulk writers that bypass write8/16/32 call
++    // iwram_code_invalidate(). Disarmed: one predicted-untaken branch per
++    // IWRAM store.
++    using IwramCodeCb = void (*)(void* user, const char* why);
++    void set_iwram_code_watch(uint32_t lo, uint32_t hi, IwramCodeCb cb, void* user) {
++        watch_lo_ = lo; watch_hi_ = hi; watch_cb_ = cb; watch_user_ = user;
++    }
++    void iwram_code_invalidate(const char* why) {
++        if (watch_hi_ && watch_cb_) watch_cb_(watch_user_, why);
++    }
++    uint32_t iwram_code_watch_lo() const { return watch_lo_; }
++    uint32_t iwram_code_watch_hi() const { return watch_hi_; }
++    // Stores that overlapped the watched range (barrier cold path), whether or not they changed a byte.
++    uint64_t iwram_code_watch_overlap_stores() const { return watch_overlap_stores_; }
++
++// Compile-time switch for the barrier on the store path (1 = present, 0 = compiled out). 0 exists ONLY as a
++// controlled performance ceiling for benchmarking; a build with 0 is not correctness-safe for mutable IWRAM code.
++#ifndef GBARECOMP_IWRAM_CODE_WATCH
++#define GBARECOMP_IWRAM_CODE_WATCH 1
++#endif
++#if GBARECOMP_IWRAM_CODE_WATCH
++#define GBARECOMP_IWRAM_WATCH(off, w, v) \
++    do { if (watch_hi_ && (off) < watch_hi_ && (off) + (w) > watch_lo_) iwram_watch_store((off), (w), (v)); } while (0)
++#else
++#define GBARECOMP_IWRAM_WATCH(off, w, v) do {} while (0)
++#endif
+ private:
+     friend class SimulationStateCodec;
++    uint32_t watch_lo_ = 0, watch_hi_ = 0;
++    uint64_t watch_overlap_stores_ = 0;
++    IwramCodeCb watch_cb_ = nullptr;
++    void* watch_user_ = nullptr;
++    // Cold path of the barrier: only reached when the store overlaps the range.
++    void iwram_watch_store(std::size_t off, uint8_t width, uint32_t v) {
++        ++watch_overlap_stores_;
++        // Only bytes inside [watch_lo_, watch_hi_) count: a straddling store that changes just
++        // out-of-range bytes leaves the code image untouched.
++        for (uint8_t i = 0; i < width; ++i) {
++            const std::size_t o = off + i;
++            if (o >= watch_lo_ && o < watch_hi_ && iwram_[o] != uint8_t(v >> (8u * i))) {
++                watch_cb_(watch_user_, "bus_store"); return;
++            }
++        }
++    }
+     // Notify a registered write observer of a pending store; returns true if the
+     // store should be SUPPRESSED (device trap during shadow validation). Reads
+     // the pre-store value for RAM regions so the gate can journal/roll back.
+diff --git a/src/gba/gba_ppu.cpp b/src/gba/gba_ppu.cpp
+index c0bed33..e41443b 100644
+--- a/src/gba/gba_ppu.cpp
++++ b/src/gba/gba_ppu.cpp
+@@ -10,6 +10,7 @@
+ #include <cstdio>
+ #include <cstring>
+ #include <stdexcept>
++#include <new>
+ 
+ #include "snapshot.h"
+ 
+@@ -87,9 +88,63 @@ void clear() {
+ 
+ }  // namespace foreign_presentation_internal
+ 
++namespace {
++uint16_t to_rgb565_from_rgb888(const uint8_t* rgb);
++}
++
+ GbaPpu::GbaPpu()  = default;
+ GbaPpu::~GbaPpu() = default;
+ 
++bool GbaPpu::set_rgb565_sidecar_enabled(bool enabled) {
++    if (!enabled) {
++        rgb565_sidecar_enabled_ = false;
++        std::vector<uint16_t>().swap(work_fb565_);
++        std::vector<uint16_t>().swap(latched_fb565_);
++        return true;
++    }
++    if (rgb565_sidecar_enabled_) return resize_rgb565_sidecar_for_view();
++
++    const std::size_t pixels =
++        static_cast<std::size_t>(render_width()) * render_height();
++    try {
++        std::vector<uint16_t> work(pixels);
++        std::vector<uint16_t> latched(pixels);
++        work_fb565_.swap(work);
++        latched_fb565_.swap(latched);
++    } catch (const std::bad_alloc&) {
++        return false;
++    }
++    rgb565_sidecar_enabled_ = true;
++    refresh_rgb565_sidecar_from_rgb888();
++    return true;
++}
++
++bool GbaPpu::resize_rgb565_sidecar_for_view() {
++    if (!rgb565_sidecar_enabled_) return true;
++    const std::size_t pixels =
++        static_cast<std::size_t>(render_width()) * render_height();
++    try {
++        work_fb565_.resize(pixels);
++        latched_fb565_.resize(pixels);
++    } catch (const std::bad_alloc&) {
++        set_rgb565_sidecar_enabled(false);
++        return false;
++    }
++    refresh_rgb565_sidecar_from_rgb888();
++    return true;
++}
++
++void GbaPpu::refresh_rgb565_sidecar_from_rgb888() {
++    if (!rgb565_sidecar_enabled_) return;
++    const std::size_t pixels =
++        static_cast<std::size_t>(render_width()) * render_height();
++    if (work_fb565_.size() < pixels || latched_fb565_.size() < pixels) return;
++    for (std::size_t i = 0; i < pixels; ++i) {
++        work_fb565_[i] = to_rgb565_from_rgb888(work_fb_.data() + i * 3);
++        latched_fb565_[i] = to_rgb565_from_rgb888(latched_fb_.data() + i * 3);
++    }
++}
++
+ void GbaPpu::serialize(gbarecomp::debug::SnapshotWriter& w) const {
+     w.u32(scanline_);
+     w.u32(dot_in_scanline_);
+@@ -169,6 +224,7 @@ void GbaPpu::deserialize(gbarecomp::debug::SnapshotReader& r) {
+     // The snapshot format predates the PPU's internal affine reference
+     // accumulator. Reconstruct it from live BGxX/Y on the next scanline.
+     affine_line_ = {};
++    refresh_rgb565_sidecar_from_rgb888();
+ }
+ 
+ void GbaPpu::reset() {
+@@ -183,6 +239,10 @@ void GbaPpu::reset() {
+     affine_line_ = {};
+     std::memset(latched_fb_.data(), 0xFF, latched_fb_.size());
+     std::memset(work_fb_.data(), 0xFF, work_fb_.size());
++    if (rgb565_sidecar_enabled_) {
++        std::fill(latched_fb565_.begin(), latched_fb565_.end(), 0xFFFFu);
++        std::fill(work_fb565_.begin(), work_fb565_.end(), 0xFFFFu);
++    }
+ }
+ 
+ void GbaPpu::set_view_margins(uint32_t left, uint32_t right,
+@@ -205,6 +265,7 @@ void GbaPpu::set_view_margins(uint32_t left, uint32_t right,
+     extra_right_ = next_right;
+     extra_top_ = next_top;
+     extra_bottom_ = next_bottom;
++    resize_rgb565_sidecar_for_view();
+ }
+ 
+ GbaPpu::TickEvents GbaPpu::tick(uint32_t cycles, uint16_t vcount_compare) {
+@@ -496,6 +557,11 @@ using color::to_rgb888;
+ using color::blend_alpha_gba555;
+ using color::brighten_gba555;
+ using color::darken_gba555;
++inline uint16_t to_rgb565_from_rgb888(const uint8_t* rgb) {
++    return static_cast<uint16_t>(((rgb[0] >> 3) << 11) |
++                                 ((rgb[1] >> 2) << 5) |
++                                 (rgb[2] >> 3));
++}
+ 
+ inline uint16_t load_u16_le(const uint8_t* p) {
+     return static_cast<uint16_t>(p[0] | (p[1] << 8));
+@@ -673,6 +739,7 @@ void mark_obj_window_scanline(bool* mask,
+ }
+ 
+ void render_scanline_internal(uint8_t* rgb,
++                              uint16_t* rgb565_sidecar,
+                               uint32_t y,
+                               uint16_t dispcnt,
+                               const uint8_t* io,
+@@ -684,8 +751,11 @@ void render_scanline_internal(uint8_t* rgb,
+     if (y >= kScreenHeight) return;
+ 
+     uint8_t* row = rgb + y * kScreenWidth * 3;
++    uint16_t* row565 = rgb565_sidecar
++        ? rgb565_sidecar + y * kScreenWidth : nullptr;
+     if (dispcnt & 0x0080u) {
+         std::memset(row, 0xFF, kScreenWidth * 3);
++        if (row565) std::fill(row565, row565 + kScreenWidth, 0xFFFFu);
+         return;
+     }
+ 
+@@ -1345,6 +1415,7 @@ void render_scanline_internal(uint8_t* rgb,
+             dst[2] = top[x].rgb[2];
+ #endif
+         }
++        if (row565) row565[x] = to_rgb565_from_rgb888(dst);
+     }
+     return;
+ }
+@@ -1363,7 +1434,8 @@ void render_scanline_internal(uint8_t* rgb,
+ // (left) and x>=240 sprites (right) both appear in the margins. Signed `y`
+ // addresses authored vertical rows, where raw OAM/affine/bitmap extrapolation
+ // is prohibited; only validated game providers may contribute content.
+-void render_scanline_wide(uint8_t* rgb, int y, uint16_t dispcnt,
++void render_scanline_wide(uint8_t* rgb, uint16_t* rgb565_sidecar,
++                          int y, uint16_t dispcnt,
+                           const uint8_t* io, const uint8_t* vram,
+                           const uint8_t* oam, const uint8_t* pal,
+                           uint32_t out_w, uint32_t ox, uint32_t oy = 0,
+@@ -1374,10 +1446,18 @@ void render_scanline_wide(uint8_t* rgb, int y, uint16_t dispcnt,
+         ox = std::min(static_cast<uint32_t>(g_ws_native_view_left), out_w - kVanW);
+     const bool native_row = y >= 0 && y < static_cast<int>(kVanH);
+     uint8_t* row = rgb + (y + static_cast<int>(oy)) * out_w * 3;
++    uint16_t* row565 = rgb565_sidecar
++        ? rgb565_sidecar + (y + static_cast<int>(oy)) * out_w : nullptr;
+     if (!native_row && (!g_ws_authored_margin_layers || !g_ws_tilemap_provider || g_ws_pillarbox)) {
+-        std::memset(row, 0, out_w * 3); return;
++        std::memset(row, 0, out_w * 3);
++        if (row565) std::fill(row565, row565 + out_w, 0);
++        return;
++    }
++    if (dispcnt & 0x0080u) {
++        std::memset(row, 0xFF, out_w * 3);
++        if (row565) std::fill(row565, row565 + out_w, 0xFFFFu);
++        return;
+     }
+-    if (dispcnt & 0x0080u) { std::memset(row, 0xFF, out_w * 3); return; }
+ 
+     struct PixelCandidate {
+ #if !defined(GBARECOMP_SCANLINE_HLE)
+@@ -2087,6 +2167,7 @@ void render_scanline_wide(uint8_t* rgb, int y, uint16_t dispcnt,
+               (g_ws_pillarbox_right && right_margin)))) {
+             dst[0] = dst[1] = dst[2] = 0;
+             if (hd) hd->black_column(x);
++            if (row565) row565[x] = 0;
+             continue;
+         }
+         // Alpha blend top (1st target) with the layer below (2nd target). Per
+@@ -2116,6 +2197,7 @@ void render_scanline_wide(uint8_t* rgb, int y, uint16_t dispcnt,
+             dst[2] = top[x].rgb[2];
+ #endif
+         }
++        if (row565) row565[x] = to_rgb565_from_rgb888(dst);
+     }
+     if (hd) hd->resolve();
+ }
+@@ -2127,18 +2209,20 @@ void GbaPpu::render(uint8_t* rgb,
+                     const uint8_t* io,
+                     const uint8_t* vram,
+                     const uint8_t* oam,
+-                    const uint8_t* pal) const {
++                    const uint8_t* pal,
++                    uint16_t* rgb565_sidecar) const {
+     if (!view_expanded()) {
+         // Faithful path — literally unchanged from before view expansion existed.
+         for (uint32_t y = 0; y < kScreenHeight; ++y) {
+-            render_scanline_internal(rgb, y, dispcnt, io, vram, oam, pal,
++            render_scanline_internal(rgb, rgb565_sidecar, y, dispcnt, io, vram, oam, pal,
+                                      kScreenWidth, kScreenHeight);
+         }
+         return;
+     }
+     const uint32_t ow = render_width();
+     for (int y = -static_cast<int>(extra_top_); y < static_cast<int>(kScreenHeight + extra_bottom_); ++y) {
+-        render_scanline_wide(rgb, y, dispcnt, io, vram, oam, pal, ow, extra_left_, extra_top_);
++        render_scanline_wide(rgb, rgb565_sidecar, y, dispcnt, io, vram, oam, pal,
++                             ow, extra_left_, extra_top_);
+     }
+ }
+ 
+@@ -2449,14 +2533,18 @@ void GbaPpu::render_scanline(uint32_t y,
+         foreign_presentation_internal::background() ||
+         foreign_presentation_internal::screen_overlay() ? nullptr : high_resolution_provider_,
+         g_ws_affine_filter_enabled != 0);
++    if (presentation_ && presentation_->native_scanline(
++            *this, y, dispcnt, affine_io.data(), vram, oam, pal)) return;
++    uint16_t* rgb565_work = rgb565_sidecar_enabled_
++        ? work_fb565_.data() : nullptr;
+     if (!view_expanded()) {
+-        render_scanline_internal(work_fb_.data(), y, dispcnt,
++        render_scanline_internal(work_fb_.data(), rgb565_work, y, dispcnt,
+                                  affine_io.data(), vram, oam, pal,
+                                  kScreenWidth, kScreenHeight);
+         if (hd_line) {
+             // The expanded compositor may apply optional presentation filters.
+             // Keep its native scratch entirely separate from canonical pixels.
+-            render_scanline_wide(hd->native_scratch(), int(y), dispcnt,
++            render_scanline_wide(hd->native_scratch(), nullptr, int(y), dispcnt,
+                 affine_io.data(), vram, oam, pal, render_width(), 0, 0, hd);
+         } else if (hd) hd->upscale_line(y, work_fb_.data() + y * render_width() * 3);
+         return;
+@@ -2466,14 +2554,15 @@ void GbaPpu::render_scanline(uint32_t y,
+     if (y == 0 && (extra_top_ || extra_bottom_)) {
+         for (int sy = -static_cast<int>(extra_top_); sy < static_cast<int>(kScreenHeight + extra_bottom_); ++sy) {
+             if (sy >= 0 && sy < static_cast<int>(kScreenHeight)) continue;
+-            render_scanline_wide(work_fb_.data(), sy, dispcnt, io, vram, oam, pal,
++            render_scanline_wide(work_fb_.data(), rgb565_work, sy, dispcnt, io, vram, oam, pal,
+                                  render_width(), extra_left_, extra_top_);
+             if (hd) hd->upscale_line(unsigned(sy + int(extra_top_)),
+                 work_fb_.data() + size_t(sy + int(extra_top_)) * render_width() * 3);
+         }
+     }
+-    render_scanline_wide(work_fb_.data(), y, dispcnt, affine_io.data(),
+-                         vram, oam, pal, render_width(), extra_left_, extra_top_, hd_line ? hd : nullptr);
++    render_scanline_wide(work_fb_.data(), rgb565_work, y, dispcnt, affine_io.data(),
++                         vram, oam, pal, render_width(), extra_left_, extra_top_,
++                         hd_line ? hd : nullptr);
+     if (hd && !hd_line) hd->upscale_line(y + extra_top_,
+         work_fb_.data() + size_t(y + extra_top_) * render_width() * 3);
+ }
+@@ -2498,13 +2587,21 @@ void GbaPpu::latch_framebuffer(uint16_t dispcnt,
+                                const uint8_t* vram,
+                                const uint8_t* oam,
+                                const uint8_t* pal) {
+-    render(work_fb_.data(), dispcnt, io, vram, oam, pal);
++    render(work_fb_.data(), dispcnt, io, vram, oam, pal,
++           rgb565_sidecar_enabled_ ? work_fb565_.data() : nullptr);
+     mark_framebuffer_latched();
+ }
+ 
+ void GbaPpu::mark_framebuffer_latched() {
+-    if (rasterization_enabled_)
++    if (rasterization_enabled_) {
+         std::memcpy(latched_fb_.data(), work_fb_.data(), render_bytes());
++        if (rgb565_sidecar_enabled_) {
++            const std::size_t pixels =
++                static_cast<std::size_t>(render_width()) * render_height();
++            std::memcpy(latched_fb565_.data(), work_fb565_.data(),
++                        pixels * sizeof(uint16_t));
++        }
++    }
+     has_latched_fb_ = true;
+     if (high_resolution_) high_resolution_->latch();
+     if (presentation_) presentation_->frame_ready();
+@@ -2515,6 +2612,10 @@ void GbaPpu::set_rasterization_enabled(bool enabled) {
+     if (!enabled) {
+         std::fill(work_fb_.begin(),work_fb_.end(),0);
+         std::fill(latched_fb_.begin(),latched_fb_.end(),0);
++        if (rgb565_sidecar_enabled_) {
++            std::fill(work_fb565_.begin(), work_fb565_.end(), 0);
++            std::fill(latched_fb565_.begin(), latched_fb565_.end(), 0);
++        }
+     }
+ }
+ 
+diff --git a/src/gba/gba_ppu.h b/src/gba/gba_ppu.h
+index 6bba097..8b87ab7 100644
+--- a/src/gba/gba_ppu.h
++++ b/src/gba/gba_ppu.h
+@@ -65,6 +65,13 @@ public:
+         virtual void scanline(const GbaPpu&, uint32_t y, uint16_t dispcnt,
+                               const uint8_t* io, const uint8_t* vram,
+                               const uint8_t* oam, const uint8_t* pal) = 0;
++        // Optional Dreamcast-native owner. Called after effective per-line
++        // affine references are computed; true means this observer produced
++        // the row and the software compositor may skip it. Default preserves
++        // every existing observer's behavior.
++        virtual bool native_scanline(const GbaPpu&, uint32_t, uint16_t,
++                                     const uint8_t*, const uint8_t*,
++                                     const uint8_t*, const uint8_t*) { return false; }
+         virtual void frame_ready() = 0;
+         virtual void restored() noexcept = 0;
+     };
+@@ -170,12 +177,16 @@ public:
+         return static_cast<std::size_t>(render_width()) * render_height() * 3;
+     }
+ 
++    // Optional packed RGB565 mirror of the same completed pixels. The caller
++    // supplies render_width() * render_height() words, tightly packed with no
++    // padding; RGB888 remains the canonical output of this API.
+     void render(uint8_t* rgb,
+                 uint16_t dispcnt,
+                 const uint8_t* io,    // 1 KB IO page for BGxCNT, BGxX/Y/PA/PB/PC/PD
+                 const uint8_t* vram,
+                 const uint8_t* oam,
+-                const uint8_t* pal) const;
++                const uint8_t* pal,
++                uint16_t* rgb565_sidecar = nullptr) const;
+     void render_scanline(uint32_t y,
+                          uint16_t dispcnt,
+                          const uint8_t* io,
+@@ -201,6 +212,17 @@ public:
+     const uint8_t* latched_framebuffer() const { return latched_fb_.data(); }
+     bool has_latched_framebuffer() const { return has_latched_fb_; }
+ 
++    // Host-only packed RGB565 mirrors. Enabling allocates buffers for the
++    // active output geometry; this state and its bytes are not serialized.
++    bool set_rgb565_sidecar_enabled(bool enabled);
++    bool rgb565_sidecar_enabled() const { return rgb565_sidecar_enabled_; }
++    const uint16_t* work_framebuffer_rgb565() const {
++        return rgb565_sidecar_enabled_ ? work_fb565_.data() : nullptr;
++    }
++    const uint16_t* latched_framebuffer_rgb565() const {
++        return rgb565_sidecar_enabled_ ? latched_fb565_.data() : nullptr;
++    }
++
+ private:
+     friend class SimulationStateCodec;
+     std::unique_ptr<GbaHighResolutionFrame> high_resolution_;
+@@ -226,6 +248,12 @@ private:
+     std::vector<uint8_t> work_fb_ = std::vector<uint8_t>(kMaxFramebufferBytes);
+     std::vector<uint8_t> latched_fb_ = std::vector<uint8_t>(kMaxFramebufferBytes);
+     bool has_latched_fb_ = false;
++    std::vector<uint16_t> work_fb565_;
++    std::vector<uint16_t> latched_fb565_;
++    bool rgb565_sidecar_enabled_ = false; // Host-only; not snapshot state.
++
++    bool resize_rgb565_sidecar_for_view();
++    void refresh_rgb565_sidecar_from_rgb888();
+ 
+     struct AffineLineState {
+         int32_t x = 0;
+diff --git a/src/gba/gba_simulation_state.cpp b/src/gba/gba_simulation_state.cpp
+index 5ef36f4..1e7b0de 100644
+--- a/src/gba/gba_simulation_state.cpp
++++ b/src/gba/gba_simulation_state.cpp
+@@ -98,6 +98,9 @@ public:
+         a.blob(p.work_fb_,GbaPpu::kFramebufferBytes);
+         a.blob(p.latched_fb_,GbaPpu::kFramebufferBytes);
+     }
++    static void refresh_rgb565_sidecar(GbaPpu& p) {
++        p.refresh_rgb565_sidecar_from_rgb888();
++    }
+ };
+ std::vector<std::uint8_t> save_device_state(const GbaBus& bus, const GbaPpu& ppu) {
+     SimulationArchive<false> archive;
+@@ -107,10 +110,13 @@ std::vector<std::uint8_t> save_device_state(const GbaBus& bus, const GbaPpu& ppu
+ bool load_device_state(GbaBus& bus, GbaPpu& ppu, std::span<const std::uint8_t> bytes) {
+     try {
+         SimulationArchive<true> archive(bytes);
++        bus.iwram_code_invalidate("simulation_state_load");
+         SimulationStateCodec::visit(archive,bus,ppu);
++        bus.iwram_code_invalidate("simulation_state_load_done");
+         if (archive.remaining() != 0) return false;
+         bus.refresh_waitstates();
++        SimulationStateCodec::refresh_rgb565_sidecar(ppu);
+         return true;
+-    } catch (const std::invalid_argument&) { return false; }
++    } catch (const std::invalid_argument&) { bus.iwram_code_invalidate("simulation_state_load_partial"); return false; }
+ }
+ } // namespace gba
+diff --git a/src/recompile/function_finder.cpp b/src/recompile/function_finder.cpp
+index 6633d60..cab372d 100644
+--- a/src/recompile/function_finder.cpp
++++ b/src/recompile/function_finder.cpp
+@@ -2934,31 +2934,17 @@ void FunctionFinder::discover_one(uint32_t entry_addr, CpuMode entry_mode,
+     functions_.push_back(std::move(fn));
+ }
+ 
+-bool FunctionFinder::run(std::size_t max_functions,
+-                         std::size_t aot_selection_limit) {
++void FunctionFinder::run(std::size_t max_functions) {
+     const std::size_t manual_seed_count = seeds_.size();
+-    stats_.aot_selection_limit = aot_selection_limit;
+     std::unordered_set<uint64_t> manual_seed_keys;
+     for (const auto& s : seeds_)
+         manual_seed_keys.insert(visit_key(s.addr, s.mode));
+-    if (aot_selection_limit != 0) {
+-        if (manual_seed_keys.size() > aot_selection_limit ||
+-            static_resume_all_ ||
+-            std::any_of(seeds_.begin(), seeds_.end(),
+-                [](const FunctionSeed& seed) {
+-                    return seed.alias_candidate;
+-                })) {
+-            return false;
+-        }
+-    }
+-    if (aot_selection_limit == 0) {
+-        std::vector<FunctionSeed> code_copy_seeds = collect_code_copy_seeds();
+-        stats_.aot_code_copy_seeds = code_copy_seeds.size();
+-        seeds_.insert(seeds_.end(),
+-                      code_copy_seeds.begin(), code_copy_seeds.end());
+-        auto callback_seeds = collect_referenced_callback_seeds();
+-        seeds_.insert(seeds_.end(), callback_seeds.begin(), callback_seeds.end());
+-    }
++    std::vector<FunctionSeed> code_copy_seeds = collect_code_copy_seeds();
++    stats_.aot_code_copy_seeds = code_copy_seeds.size();
++    seeds_.insert(seeds_.end(),
++                  code_copy_seeds.begin(), code_copy_seeds.end());
++    auto callback_seeds = collect_referenced_callback_seeds();
++    seeds_.insert(seeds_.end(), callback_seeds.begin(), callback_seeds.end());
+ 
+     // Validate seeds against data_ranges before any walking. A seed
+     // landing inside a data_range is a collision (the TOML author
+@@ -3000,9 +2986,7 @@ bool FunctionFinder::run(std::size_t max_functions,
+     // is intentionally bounded during bring-up.
+     std::vector<QueuedSeed> worklist;
+     worklist.reserve(seeds_.size());
+-    const std::size_t initial_seed_count = aot_selection_limit
+-        ? manual_seed_count : seeds_.size();
+-    for (std::size_t i = 0; i < initial_seed_count; ++i) {
++    for (std::size_t i = 0; i < seeds_.size(); ++i) {
+         worklist.push_back(QueuedSeed{
+             seeds_[i], i < manual_seed_count});
+     }
+@@ -3019,16 +3003,8 @@ bool FunctionFinder::run(std::size_t max_functions,
+ 
+     std::size_t pos = 0;
+     while ((pos < worklist.size() || !deferred_store_callbacks_.empty() || !deferred_callback_branches_.empty()) &&
+-           (aot_selection_limit == 0 ||
+-            functions_.size() < aot_selection_limit) &&
+            (functions_.size() < max_functions || required_remaining > 0)) {
+         if(pos==worklist.size()) {
+-            if (aot_selection_limit != 0) {
+-                deferred_store_callbacks_.clear();
+-                deferred_callback_branches_.clear();
+-                aot_pointer_seeds_.clear();
+-                continue;
+-            }
+             if (deferred_store_callbacks_.empty()) {
+                 // The branch extension must not spend the bounded call-site
+                 // budget, or change traversal provenance, before the existing
+@@ -3099,20 +3075,6 @@ bool FunctionFinder::run(std::size_t max_functions,
+         discover_one(s.addr, s.mode, s.name, s.source_addr, s.speculative);
+         if (functions_.size() == before) continue;
+ 
+-        // Auto-discovered table entries can collide with bytes that the
+-        // finder has classified as data. Such a walk has no body; emitting
+-        // it would create a dispatch stub that loops back to the same PC.
+-        // In bounded selection, leave inferred targets out so the caller's
+-        // normal miss policy handles them. An explicitly requested empty
+-        // root is a configuration error and fails closed.
+-        if (aot_selection_limit != 0 &&
+-            functions_.back().end_addr <= functions_.back().addr) {
+-            if (manual_seed_keys.count(s_key) != 0) return false;
+-            functions_.pop_back();
+-            ++stats_.aot_selection_skipped_empty;
+-            continue;
+-        }
+-
+         // The function we just added is at the end of functions_.
+         const Function& fn = functions_.back();
+         std::vector<QueuedSeed> discovered_seeds;
+@@ -3178,48 +3140,33 @@ bool FunctionFinder::run(std::size_t max_functions,
+         // Same enqueue path as mode_switch_seeds_; the worklist dedups
+         // against anything already discovered, so a literal that points
+         // at a known function is harmlessly dropped here.
+-        if (aot_selection_limit == 0) {
+-            for (const auto& ls : literal_pool_seeds_) {
+-                uint64_t k = visit_key(ls.addr, ls.mode);
+-                origin_mask[k] |= 2u;
+-                if (!enqueued.insert(k).second) continue;  // already queued
+-                discovered_seeds.push_back(QueuedSeed{ls, current_required});
+-                if (current_required) {
+-                    ++required_remaining;
+-                }
++        for (const auto& ls : literal_pool_seeds_) {
++            uint64_t k = visit_key(ls.addr, ls.mode);
++            origin_mask[k] |= 2u;
++            if (!enqueued.insert(k).second) continue;  // already queued
++            discovered_seeds.push_back(QueuedSeed{ls, current_required});
++            if (current_required) {
++                ++required_remaining;
+             }
+         }
+         literal_pool_seeds_.clear();
+-        if (aot_selection_limit == 0) harvest_relative_callbacks();
++        harvest_relative_callbacks();
+         // Drain address-taken functions from pointer tables whose base was
+         // itself loaded by this reachable walk.
+-        if (aot_selection_limit == 0) {
+-            for (const auto& as : aot_pointer_seeds_) {
+-                uint64_t k = visit_key(as.addr, as.mode);
+-                origin_mask[k] |= 2u;
+-                if (!enqueued.insert(k).second) continue;
+-                discovered_seeds.push_back(QueuedSeed{as, current_required});
+-                if (current_required) {
+-                    ++required_remaining;
+-                }
++        for (const auto& as : aot_pointer_seeds_) {
++            uint64_t k = visit_key(as.addr, as.mode);
++            origin_mask[k] |= 2u;
++            if (!enqueued.insert(k).second) continue;
++            discovered_seeds.push_back(QueuedSeed{as, current_required});
++            if (current_required) {
++                ++required_remaining;
+             }
+         }
+         aot_pointer_seeds_.clear();
+         if (!discovered_seeds.empty()) {
+-            if (aot_selection_limit != 0) {
+-                std::sort(discovered_seeds.begin(), discovered_seeds.end(),
+-                    [](const QueuedSeed& a, const QueuedSeed& b) {
+-                        if (a.seed.addr != b.seed.addr)
+-                            return a.seed.addr < b.seed.addr;
+-                        return a.seed.mode < b.seed.mode;
+-                    });
+-                worklist.insert(worklist.end(), discovered_seeds.begin(),
+-                                discovered_seeds.end());
+-            } else {
+-                worklist.insert(
+-                    worklist.begin() + static_cast<std::ptrdiff_t>(pos),
+-                    discovered_seeds.begin(), discovered_seeds.end());
+-            }
++            worklist.insert(worklist.begin() + static_cast<std::ptrdiff_t>(pos),
++                            discovered_seeds.begin(),
++                            discovered_seeds.end());
+         }
+         // If THIS function came from a seed (not a walk), it was
+         // discovered "as a seed", but the function's body still
+@@ -3398,11 +3345,6 @@ bool FunctionFinder::run(std::size_t max_functions,
+         if (!fn.alias_entries.empty()) ++stats_.alias_hosts_total;
+     }
+     stats_.functions_total = functions_.size();
+-    stats_.aot_selection_pending = aot_selection_limit && pos < worklist.size()
+-        ? worklist.size() - pos : 0;
+-    stats_.aot_selection_truncated = aot_selection_limit != 0 &&
+-        stats_.functions_total >= aot_selection_limit &&
+-        stats_.aot_selection_pending != 0;
+     stats_.functions_arm = 0;
+     stats_.functions_thumb = 0;
+     stats_.discovered_by_walk_only = 0;
+@@ -3429,7 +3371,6 @@ bool FunctionFinder::run(std::size_t max_functions,
+             default: break;
+         }
+     }
+-    return true;
+ }
+ 
+ }  // namespace gbarecomp
+diff --git a/src/recompile/function_finder.h b/src/recompile/function_finder.h
+index 39a4b84..127cb4d 100644
+--- a/src/recompile/function_finder.h
++++ b/src/recompile/function_finder.h
+@@ -138,10 +138,6 @@ struct FinderStats {
+     std::size_t redundant_manual = 0;       // in both seeds AND walk-discovered
+     std::size_t manual_seeds_only = 0;      // would be lost without seeds
+     std::size_t excluded_count = 0;         // # removed by exclude_func
+-    std::size_t aot_selection_limit = 0;    // explicit opt-in output cap
+-    std::size_t aot_selection_pending = 0;  // queued entries left unvisited
+-    std::size_t aot_selection_skipped_empty = 0; // inferred data targets
+-    bool aot_selection_truncated = false;
+     // Literal-pool harvesting (Stage 0.1): a PC-relative LDR of a word
+     // that looks like a code pointer seeds a new function entry.
+     std::size_t literal_pool_words_seen = 0;  // PC-rel literals examined
+@@ -248,16 +244,9 @@ public:
+         static_resume_all_ = enabled;
+     }
+ 
+-    // Run discovery starting from all seeds. `max_functions` retains its
+-    // historical meaning: optional discoveries are skipped at this threshold,
+-    // while the required reachable closure can exceed it. The separate
+-    // `aot_selection_limit` is an opt-in cap on emitted (addr,mode) entries.
+-    // In that mode only manual roots and direct/mode-switch CFG discoveries
+-    // participate; roots are processed first and discovered entries in sorted
+-    // order. Omitted targets remain runtime dispatch misses for the caller's
+-    // existing fallback policy to accept or reject.
+-    bool run(std::size_t max_functions = 4096,
+-             std::size_t aot_selection_limit = 0);
++    // Run discovery starting from all seeds. Bounded by
++    // `max_functions` to avoid runaways during bring-up.
++    void run(std::size_t max_functions = 4096);
+ 
+     // Sorted-by-address output.
+     const std::vector<Function>& functions() const { return functions_; }
+diff --git a/src/runtime/heal_gate.cpp b/src/runtime/heal_gate.cpp
+index 7451040..69ff5c2 100644
+--- a/src/runtime/heal_gate.cpp
++++ b/src/runtime/heal_gate.cpp
+@@ -20,10 +20,10 @@ struct RegionView {
+     const char* name;
+ };
+ 
+-RegionView region_view(gba::GbaBus& bus, GateRegion r) {
++RegionView region_view(gba::GbaBus& bus, GateRegion r, bool write = false) {
+     switch (r) {
+         case GateRegion::Ewram: return {bus.ewram_ptr(), 256u * 1024u, "EWRAM"};
+-        case GateRegion::Iwram: return {bus.iwram_ptr(),  32u * 1024u, "IWRAM"};
++        case GateRegion::Iwram: return {write ? bus.iwram_write_ptr("heal_gate_restore_full") : const_cast<uint8_t*>(bus.iwram_read_ptr()), 32u * 1024u, "IWRAM"};
+         case GateRegion::Pal:   return {bus.pal_ptr(),          1024u, "PAL"};
+         case GateRegion::Vram:  return {bus.vram_ptr(),   96u * 1024u, "VRAM"};
+         case GateRegion::Oam:   return {bus.oam_ptr(),          1024u, "OAM"};
+@@ -36,7 +36,7 @@ void region_ptr(gba::GbaBus& bus, gba::BusWriteRegion r, uint8_t*& p,
+                 std::size_t& cap) {
+     switch (r) {
+         case gba::BusWriteRegion::Ewram: p = bus.ewram_ptr(); cap = 256u * 1024u; return;
+-        case gba::BusWriteRegion::Iwram: p = bus.iwram_ptr(); cap =  32u * 1024u; return;
++        case gba::BusWriteRegion::Iwram: p = bus.iwram_write_ptr("heal_gate_rollback"); cap =  32u * 1024u; return;
+         case gba::BusWriteRegion::Pal:   p = bus.pal_ptr();   cap =        1024u; return;
+         case gba::BusWriteRegion::Vram:  p = bus.vram_ptr();  cap =  96u * 1024u; return;
+         case gba::BusWriteRegion::Oam:   p = bus.oam_ptr();   cap =        1024u; return;
+@@ -99,7 +99,7 @@ void restore_full(const StateSnapshot& s, ArmCpuState& cpu, uint64_t& cycles,
+     cycles = s.cycles;
+     for (int i = 0; i < kGateRegionCount; ++i) {
+         const auto r = static_cast<GateRegion>(i);
+-        RegionView v = region_view(bus, r);
++        RegionView v = region_view(bus, r, true);
+         const auto& src = snapshot_region(s, r);
+         if (src.size() == v.size) std::memcpy(v.data, src.data(), v.size);
+     }
+diff --git a/src/runtime/overlay_loader.cpp b/src/runtime/overlay_loader.cpp
+index d6c4656..9fe7b04 100644
+--- a/src/runtime/overlay_loader.cpp
++++ b/src/runtime/overlay_loader.cpp
+@@ -225,7 +225,7 @@ bool snapshot_ram_region(uint32_t pc, OverlayWorkItem* w) {
+         size = 256u * 1024u;
+         base = 0x02000000u;
+     } else if (pc >= 0x03000000u && pc < 0x03008000u) {
+-        src = bus->iwram_ptr();
++        src = bus->iwram_read_ptr();
+         size = 32u * 1024u;
+         base = 0x03000000u;
+     } else {
+diff --git a/src/runtime/runtime.cpp b/src/runtime/runtime.cpp
+index 3dce81e..1197b2e 100644
+--- a/src/runtime/runtime.cpp
++++ b/src/runtime/runtime.cpp
+@@ -2239,7 +2239,7 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+         }
+         if (const char* iw = std::getenv("GBARECOMP_IWRAM_DUMP")) {
+             std::ofstream dump(iw, std::ios::binary | std::ios::trunc);
+-            dump.write(reinterpret_cast<const char*>(bus.iwram_ptr()),
++            dump.write(reinterpret_cast<const char*>(bus.iwram_read_ptr()),
+                        32 * 1024);
+             if (dump) {
+                 std::printf("iwram_dump_saved path=\"%s\" bytes=32768\n", iw);
+@@ -2269,6 +2269,15 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+             return true;
+         }
+ 
++        // Native-island mode (opt-in): in the force-interp backend, dispatch the generated ARM function at a static
++        // IWRAM entry unless the guard hook vetoes it (stale/unvalidated image). Everything else stays interpreted.
++        if (g_runtime_native_island &&
++            runtime_island_wants_native(g_cpu.R[15], (g_cpu.cpsr & CPSR_T_BIT) != 0)) {
++            runtime_dispatch(g_cpu.R[15]);
++            ++taken;
++            sync_frame_counter();
++            return true;
++        }
+         // Co-simulation "interp" backend: interpret one guest instruction rather
+         // than dispatching generated code. Reuses runtime_tick/runtime_swi so the
+         // device/IRQ/BIOS/clock path is identical to the recomp backend; only
+@@ -2407,7 +2416,7 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+             wram_regions.push_back({base, ptr, len, std::vector<uint8_t>(len, 0)});
+         };
+         reg(0x02000000u, bus.ewram_ptr(),   256 * 1024);
+-        reg(0x03000000u, bus.iwram_ptr(),    32 * 1024);
++        reg(0x03000000u, bus.iwram_read_ptr(),    32 * 1024);
+         reg(0x04000000u, bus.io().raw(),     gba::GbaIo::kIoSize);
+         reg(0x05000000u, bus.pal_ptr(),       1 * 1024);
+         reg(0x06000000u, bus.vram_ptr(),     96 * 1024);
+diff --git a/src/runtime/runtime_arm_default_aborts.cpp b/src/runtime/runtime_arm_default_aborts.cpp
+index ea6916d..7471573 100644
+--- a/src/runtime/runtime_arm_default_aborts.cpp
++++ b/src/runtime/runtime_arm_default_aborts.cpp
+@@ -433,6 +433,7 @@ extern "C" const char* g_tick_ctx;
+ // runtime_irq() (g_call_return_floor): the floor keeps the cancel cascade from
+ // corrupting mainline frames; this keeps the self-heal bridge from bailing early.
+ extern "C" uint32_t g_irq_nest_depth;
++extern "C" uint32_t g_irq_iret_depth;   // set by IRQ-mode exception returns (runtime_arm.cpp)
+ 
+ // runtime_bridge_interpret — the interpret-the-missed-subtree core, factored out
+ // of runtime_dispatch_miss so the P6 sljit differential gate can reuse it as its
+@@ -675,6 +676,18 @@ extern "C" int runtime_bridge_interpret(uint32_t entry_pc, bool entry_thumb,
+             }
+         }
+ 
++        // IRQ-continuation stop: the IRQ handler this bridge is driving has
++        // executed its own IRQ-mode exception return. g_irq_iret_depth ==
++        // g_irq_nest_depth is true exactly when the handler at THIS nesting level
++        // has returned (runtime_irq() zeroes it on entry and restores the
++        // enclosing level's value on exit), whether the return was stepped here
++        // or inside a nested SWI/IRQ dispatch this step made. The interrupted
++        // context owns the return PC now; interpreting further would retire its
++        // next instruction here and again when the suspended native frame (or the
++        // caller's re-dispatch) resumes it. Hand back to runtime_irq()'s drive
++        // loop, which sees the iret depth and returns.
++        if (irq_cont && g_irq_iret_depth == g_irq_nest_depth) break;
++
+         // Heal-to-static: for a top-level miss (no reliable return address),
+         // the moment the bridged subtree branches/returns back into a
+         // statically-recompiled function, stop interpreting and let the main
+@@ -946,7 +959,7 @@ extern "C" void runtime_dispatch_miss(uint32_t target_pc) {
+         if (const char* path = std::getenv("GBARECOMP_MISS_IWRAM_DUMP")) {
+             if (gba::GbaBus* bus = gbarecomp::active_bus()) {
+                 if (std::FILE* f = std::fopen(path, "wb")) {
+-                    std::fwrite(bus->iwram_ptr(), 1, 32 * 1024, f);
++                    std::fwrite(bus->iwram_read_ptr(), 1, 32 * 1024, f);
+                     std::fclose(f);
+                     miss_iwram_captured = true;
+                     std::fprintf(stderr,
+diff --git a/tests/dma/bulk_test_main.cpp b/tests/dma/bulk_test_main.cpp
+index a44f2b3..e5625e2 100644
+--- a/tests/dma/bulk_test_main.cpp
++++ b/tests/dma/bulk_test_main.cpp
+@@ -27,7 +27,7 @@ int main(int argc, char**) {
+     for (uint32_t width : {2u, 4u}) {
+         const uint16_t ctl = static_cast<uint16_t>(0xC000u | (width == 4 ? 0x0400u : 0u));
+         dma(io, 0x02000001u, 0x03000001u, 128, ctl);
+-        check(std::memcmp(bus->ewram_ptr(), bus->iwram_ptr(), 128 * width) == 0, "aligned immediate copy");
++        check(std::memcmp(bus->ewram_ptr(), bus->iwram_read_ptr(), 128 * width) == 0, "aligned immediate copy");
+         check((io.read16(0xBA) & 0x8000u) == 0, "completion clears enable");
+         check((io.read16(0x202) & 0x100u) != 0, "completion IRQ");
+         const unsigned debt = io.take_dma_steal_cycles();
+@@ -38,7 +38,7 @@ int main(int argc, char**) {
+         // publish a fresh source span to the same destination.
+         dma(io, 0x02000000u, 0x03000100u, 32, static_cast<uint16_t>(0xA260u | (width == 4 ? 0x400u : 0u)));
+         io.run_timed_dma(2); io.run_timed_dma(2);
+-        check(std::memcmp(bus->ewram_ptr() + 32 * width, bus->iwram_ptr() + 0x100, 32 * width) == 0,
++        check(std::memcmp(bus->ewram_ptr() + 32 * width, bus->iwram_read_ptr() + 0x100, 32 * width) == 0,
+               "repeat source continuation and destination reload");
+         dma(io, 0x02000000u, 0x02000000u, 1, 0); // disable before subsequent checks
+     }
+diff --git a/tests/ppu_smoke/test_main.cpp b/tests/ppu_smoke/test_main.cpp
+index 0b22aeb..dd3f468 100644
+--- a/tests/ppu_smoke/test_main.cpp
++++ b/tests/ppu_smoke/test_main.cpp
+@@ -1,4 +1,6 @@
+ #include "gba_ppu.h"
++#include "gba_bus.h"
++#include "gba_simulation_state.h"
+ #include "foreign_presentation_internal.h"
+ #include "snapshot.h"
+ #include "view_config.h"
+@@ -40,6 +42,26 @@ void expect_pixel(const uint8_t* actual,
+     std::exit(1);
+ }
+ 
++uint16_t rgb888_reference_rgb565(const uint8_t* rgb) {
++    return static_cast<uint16_t>(((rgb[0] >> 3) << 11) |
++                                 ((rgb[1] >> 2) << 5) |
++                                 (rgb[2] >> 3));
++}
++
++void expect_sidecar_matches_rgb888(const uint8_t* rgb,
++                                   const uint16_t* rgb565,
++                                   std::size_t pixel_count,
++                                   const char* label) {
++    for (std::size_t i = 0; i < pixel_count; ++i) {
++        const uint16_t expected = rgb888_reference_rgb565(rgb + i * 3);
++        if (rgb565[i] == expected) continue;
++        std::fprintf(stderr,
++                     "%s: pixel %zu expected RGB565 0x%04x, got 0x%04x\n",
++                     label, i, expected, rgb565[i]);
++        std::exit(1);
++    }
++}
++
+ // Manual visual QA only: leave normal tests hermetic, but let CI/developers
+ // request the deterministic focus fixture as a portable screenshot artifact.
+ void dump_focus_screenshot_if_requested(const uint8_t* rgb) {
+@@ -61,6 +83,49 @@ struct Fixture {
+     gba::GbaPpu ppu;
+ };
+ 
++struct NativeScanlineOwner final : gba::GbaPpu::PresentationObserver {
++    unsigned observed = 0;
++    unsigned claimed = 0;
++    unsigned ready = 0;
++    unsigned restored_count = 0;
++    void scanline(const gba::GbaPpu&, uint32_t, uint16_t, const uint8_t*,
++                  const uint8_t*, const uint8_t*, const uint8_t*) override {
++        ++observed;
++    }
++    bool native_scanline(const gba::GbaPpu&, uint32_t y, uint16_t,
++                         const uint8_t*, const uint8_t*, const uint8_t*,
++                         const uint8_t*) override {
++        ++claimed;
++        return y == 0;
++    }
++    void frame_ready() override { ++ready; }
++    void restored() noexcept override { ++restored_count; }
++};
++
++void test_optional_native_scanline_ownership() {
++    Fixture f;
++    NativeScanlineOwner owner;
++    f.ppu.set_presentation_observer(&owner);
++    const uint16_t forced_blank = 0x0080;
++    f.ppu.render_scanline(0, forced_blank, f.io.data(), f.vram.data(),
++                          f.oam.data(), f.pal.data());
++    f.ppu.render_scanline(1, forced_blank, f.io.data(), f.vram.data(),
++                          f.oam.data(), f.pal.data());
++    f.ppu.mark_framebuffer_latched();
++    const uint8_t* frame = f.ppu.latched_framebuffer();
++    if (owner.observed != 2 || owner.claimed != 2 || owner.ready != 1 ||
++        frame[0] != 0 || frame[3 * gba::GbaPpu::kScreenWidth] != 255) {
++        std::fprintf(stderr, "native scanline ownership hook contract failed\n");
++        std::exit(1);
++    }
++    f.ppu.presentation_observer()->restored();
++    if (owner.restored_count != 1) {
++        std::fprintf(stderr, "native scanline restore callback failed\n");
++        std::exit(1);
++    }
++    f.ppu.set_presentation_observer(nullptr);
++}
++
+ void set_bg2_identity(Fixture& f) {
+     store16(&f.io[0x20], 0x0100);  // PA = 1.0
+     store16(&f.io[0x22], 0x0000);  // PB = 0.0
+@@ -135,10 +200,14 @@ void test_alpha_native_domain_and_green_precision() {
+     store16(&f.io[0x50], 0x2041); // BG0 first, alpha, backdrop second.
+     store16(&f.io[0x52], 0x100B); // EVA=11, EVB=16.
+ 
++    std::array<uint16_t, gba::GbaPpu::kScreenWidth * gba::GbaPpu::kScreenHeight>
++        rgb565{};
+     f.ppu.render(f.rgb.data(), dispcnt, f.io.data(), f.vram.data(),
+-                 f.oam.data(), f.pal.data());
++                 f.oam.data(), f.pal.data(), rgb565.data());
+     // Native-domain result is RGB5(27,19,28), expanded after blending.
+     expect_pixel(f.rgb.data(), 222, 156, 231, "alpha native-domain rounding");
++    expect_sidecar_matches_rgb888(f.rgb.data(), rgb565.data(), rgb565.size(),
++                                  "alpha RGB565 sidecar");
+ }
+ 
+ void test_brightness_native_domain_and_green_precision() {
+@@ -150,15 +219,254 @@ void test_brightness_native_domain_and_green_precision() {
+ 
+     // Backdrop first target, brighten effect. Native result RGB5(16,19,15).
+     store16(&f.io[0x50], 0x00A0);
++    std::array<uint16_t, gba::GbaPpu::kScreenWidth * gba::GbaPpu::kScreenHeight>
++        rgb565{};
+     f.ppu.render(f.rgb.data(), 0, f.io.data(), f.vram.data(),
+-                 f.oam.data(), f.pal.data());
++                 f.oam.data(), f.pal.data(), rgb565.data());
+     expect_pixel(f.rgb.data(), 132, 156, 123, "brighten native-domain rounding");
++    expect_sidecar_matches_rgb888(f.rgb.data(), rgb565.data(), rgb565.size(),
++                                  "brighten RGB565 sidecar");
+ 
+     // Same source and coefficient, darken effect. Native result RGB5(3,6,2).
+     store16(&f.io[0x50], 0x00E0);
+     f.ppu.render(f.rgb.data(), 0, f.io.data(), f.vram.data(),
+-                 f.oam.data(), f.pal.data());
++                 f.oam.data(), f.pal.data(), rgb565.data());
+     expect_pixel(f.rgb.data(), 24, 49, 16, "darken native-domain rounding");
++    expect_sidecar_matches_rgb888(f.rgb.data(), rgb565.data(), rgb565.size(),
++                                  "darken RGB565 sidecar");
++}
++
++void test_rgb565_sidecar_exhaustive_gba_colors() {
++    Fixture f;
++    disable_all_objects(f);
++    set_bg2_identity(f);
++    constexpr std::size_t kColorCount = 32768;
++    constexpr std::size_t kPixels =
++        gba::GbaPpu::kScreenWidth * gba::GbaPpu::kScreenHeight;
++    std::array<uint16_t, kPixels> rgb565{};
++    std::array<uint8_t, gba::GbaPpu::kFramebufferBytes> with_sidecar{};
++
++    // Mode 3 reads little-endian GBA BGR555 words directly from VRAM.
++    // The first 32,768 pixels enumerate every 15-bit color exactly once.
++    for (std::size_t i = 0; i < kPixels; ++i) {
++        const uint16_t color = static_cast<uint16_t>(i < kColorCount ? i : 0);
++        store16(&f.vram[i * 2], color);
++    }
++    f.ppu.render(f.rgb.data(), 0x0403, f.io.data(), f.vram.data(),
++                 f.oam.data(), f.pal.data(), rgb565.data());
++    with_sidecar = f.rgb;
++    expect_sidecar_matches_rgb888(f.rgb.data(), rgb565.data(), kPixels,
++                                  "exhaustive RGB565 sidecar");
++    f.ppu.render(f.rgb.data(), 0x0403, f.io.data(), f.vram.data(),
++                 f.oam.data(), f.pal.data());
++    if (f.rgb != with_sidecar) {
++        std::fprintf(stderr,
++                     "default RGB888 output changed when sidecar is disabled\n");
++        std::exit(1);
++    }
++
++    // Bit 15 is not part of direct-color display output. Verify that the
++    // sidecar follows the existing RGB888 result when it is set on every word.
++    for (std::size_t i = 0; i < kPixels; ++i) {
++        const uint16_t color = static_cast<uint16_t>(0x8000u |
++            static_cast<uint16_t>(i < kColorCount ? i : 0));
++        store16(&f.vram[i * 2], color);
++    }
++    f.ppu.render(f.rgb.data(), 0x0403, f.io.data(), f.vram.data(),
++                 f.oam.data(), f.pal.data(), rgb565.data());
++    expect_sidecar_matches_rgb888(f.rgb.data(), rgb565.data(), kPixels,
++                                  "bit-15 RGB565 sidecar");
++}
++
++void test_rgb565_scanline_vblank_and_restore_lifecycle() {
++    Fixture f;
++    if (f.ppu.rgb565_sidecar_enabled() ||
++        f.ppu.work_framebuffer_rgb565() != nullptr ||
++        f.ppu.latched_framebuffer_rgb565() != nullptr) {
++        std::fprintf(stderr, "RGB565 scanline sidecar is not default-off\n");
++        std::exit(1);
++    }
++    if (!f.ppu.set_rgb565_sidecar_enabled(true)) {
++        std::fprintf(stderr, "RGB565 scanline sidecar allocation failed\n");
++        std::exit(1);
++    }
++    set_bg2_identity(f);
++    store16(&f.pal[0], 0x7C00);  // Blue backdrop, used by transparent index 0.
++    store16(&f.pal[2], 0x001F);  // Page 0 red.
++    store16(&f.pal[4], 0x03E0);  // Page 1 green.
++    std::fill_n(f.vram.begin(), gba::GbaPpu::kScreenWidth *
++                                  gba::GbaPpu::kScreenHeight, 1);
++    std::fill_n(f.vram.begin() + 0xA000, gba::GbaPpu::kScreenWidth *
++                                           gba::GbaPpu::kScreenHeight, 2);
++    f.vram[0] = 0;
++    f.vram[0xA000] = 0;
++
++    auto render_visible_frame = [&](uint16_t dispcnt, bool expect_vblank) {
++        for (uint32_t y = 0; y < gba::GbaPpu::kScreenHeight; ++y) {
++            const auto hblank = f.ppu.tick(gba::GbaPpu::kDotsVisible *
++                                            gba::GbaPpu::kCyclesPerDot);
++            if (!hblank.hblank_started) {
++                std::fprintf(stderr, "RGB565 frame: missing HBlank at row %u\n", y);
++                std::exit(1);
++            }
++            f.ppu.render_scanline(y, dispcnt, f.io.data(), f.vram.data(),
++                                  f.oam.data(), f.pal.data());
++            const auto end_line = f.ppu.tick(
++                (gba::GbaPpu::kDotsPerScanline - gba::GbaPpu::kDotsVisible) *
++                gba::GbaPpu::kCyclesPerDot);
++            const bool vblank = end_line.vblank_started;
++            if (vblank != (expect_vblank && y + 1 == gba::GbaPpu::kScreenHeight)) {
++                std::fprintf(stderr,
++                             "RGB565 frame: unexpected VBlank event after row %u\n",
++                             y);
++                std::exit(1);
++            }
++            if (vblank) f.ppu.mark_framebuffer_latched();
++        }
++    };
++
++    // The sidecar is generated line-by-line and becomes visible only at the
++    // same VBlank boundary as the authoritative RGB888 latch.
++    render_visible_frame(0x0404, true);
++    expect_sidecar_matches_rgb888(f.ppu.latched_framebuffer(),
++                                  f.ppu.latched_framebuffer_rgb565(),
++                                  gba::GbaPpu::kScreenWidth *
++                                      gba::GbaPpu::kScreenHeight,
++                                  "page 0 VBlank latch");
++    const std::vector<uint8_t> latched_rgb(
++        f.ppu.latched_framebuffer(),
++        f.ppu.latched_framebuffer() + gba::GbaPpu::kFramebufferBytes);
++    const std::vector<uint16_t> latched_rgb565(
++        f.ppu.latched_framebuffer_rgb565(),
++        f.ppu.latched_framebuffer_rgb565() +
++            gba::GbaPpu::kScreenWidth * gba::GbaPpu::kScreenHeight);
++    expect_pixel(f.ppu.latched_framebuffer(), 0, 0, 255,
++                 "page 0 transparent backdrop after latch");
++    if (f.ppu.latched_framebuffer_rgb565()[0] != 0x001Fu) {
++        std::fprintf(stderr, "RGB565 page 0 backdrop word mismatch\n");
++        std::exit(1);
++    }
++
++    // VBlank blank lines advance the PPU to the next frame. The captured
++    // frame remains stable while page 1 is being scanned out.
++    for (uint32_t y = gba::GbaPpu::kLinesVisible;
++         y < gba::GbaPpu::kLinesTotal; ++y) {
++        const auto blank_line = f.ppu.tick(gba::GbaPpu::kDotsPerScanline *
++                                            gba::GbaPpu::kCyclesPerDot);
++        if (blank_line.frame_completed != (y + 1 == gba::GbaPpu::kLinesTotal)) {
++            std::fprintf(stderr, "RGB565 frame: frame-complete event mismatch\n");
++            std::exit(1);
++        }
++    }
++
++    for (uint32_t y = 0; y < gba::GbaPpu::kScreenHeight / 2; ++y) {
++        const auto hblank = f.ppu.tick(gba::GbaPpu::kDotsVisible *
++                                        gba::GbaPpu::kCyclesPerDot);
++        if (!hblank.hblank_started) std::exit(1);
++        f.ppu.render_scanline(y, 0x0414, f.io.data(), f.vram.data(),
++                              f.oam.data(), f.pal.data());
++        const auto end_line = f.ppu.tick(
++            (gba::GbaPpu::kDotsPerScanline - gba::GbaPpu::kDotsVisible) *
++            gba::GbaPpu::kCyclesPerDot);
++        if (end_line.vblank_started) std::exit(1);
++    }
++    if (std::memcmp(f.ppu.latched_framebuffer(), latched_rgb.data(),
++                    latched_rgb.size()) != 0 ||
++        !std::equal(latched_rgb565.begin(), latched_rgb565.end(),
++                    f.ppu.latched_framebuffer_rgb565())) {
++        std::fprintf(stderr, "in-progress page flip changed the latched frame\n");
++        std::exit(1);
++    }
++    if (f.ppu.work_framebuffer_rgb565()[0] != 0x001Fu ||
++        f.ppu.work_framebuffer_rgb565()[1] != 0x07E0u ||
++        f.ppu.work_framebuffer_rgb565()[
++            (gba::GbaPpu::kScreenHeight - 1) * gba::GbaPpu::kScreenWidth + 1] !=
++            0xF800u) {
++        std::fprintf(stderr, "in-progress RGB565 work frame has wrong page mix\n");
++        std::exit(1);
++    }
++    for (uint32_t y = gba::GbaPpu::kScreenHeight / 2;
++         y < gba::GbaPpu::kScreenHeight; ++y) {
++        const auto hblank = f.ppu.tick(gba::GbaPpu::kDotsVisible *
++                                        gba::GbaPpu::kCyclesPerDot);
++        if (!hblank.hblank_started) std::exit(1);
++        f.ppu.render_scanline(y, 0x0414, f.io.data(), f.vram.data(),
++                              f.oam.data(), f.pal.data());
++        const auto end_line = f.ppu.tick(
++            (gba::GbaPpu::kDotsPerScanline - gba::GbaPpu::kDotsVisible) *
++            gba::GbaPpu::kCyclesPerDot);
++        if (end_line.vblank_started != (y + 1 == gba::GbaPpu::kScreenHeight))
++            std::exit(1);
++        if (end_line.vblank_started) f.ppu.mark_framebuffer_latched();
++    }
++    expect_sidecar_matches_rgb888(f.ppu.latched_framebuffer(),
++                                  f.ppu.latched_framebuffer_rgb565(),
++                                  gba::GbaPpu::kScreenWidth *
++                                      gba::GbaPpu::kScreenHeight,
++                                  "page 1 VBlank latch");
++    if (f.ppu.latched_framebuffer_rgb565()[0] != 0x001Fu ||
++        f.ppu.latched_framebuffer_rgb565()[1] != 0x07E0u) {
++        std::fprintf(stderr, "RGB565 page 1 latch does not reflect page flip\n");
++        std::exit(1);
++    }
++
++    // Neither legacy PPU snapshots nor simulation-device payloads gain sidecar
++    // bytes. Restore derives both mirrors from authoritative RGB888 state.
++    gbarecomp::debug::SnapshotWriter sidecar_snapshot;
++    f.ppu.serialize(sidecar_snapshot);
++    if (!f.ppu.set_rgb565_sidecar_enabled(false)) std::exit(1);
++    gbarecomp::debug::SnapshotWriter rgb888_snapshot;
++    f.ppu.serialize(rgb888_snapshot);
++    if (sidecar_snapshot.buffer() != rgb888_snapshot.buffer() ||
++        !f.ppu.set_rgb565_sidecar_enabled(true)) {
++        std::fprintf(stderr, "RGB565 sidecar changed snapshot payload\n");
++        std::exit(1);
++    }
++    gba::GbaPpu restored;
++    if (!restored.set_rgb565_sidecar_enabled(true)) std::exit(1);
++    gbarecomp::debug::SnapshotReader reader(
++        sidecar_snapshot.buffer().data(), sidecar_snapshot.size());
++    restored.deserialize(reader);
++    if (!reader.ok() || reader.remaining() ||
++        std::memcmp(restored.latched_framebuffer(), f.ppu.latched_framebuffer(),
++                    gba::GbaPpu::kFramebufferBytes) != 0) {
++        std::fprintf(stderr, "RGB565 snapshot restore failed RGB888 check\n");
++        std::exit(1);
++    }
++    expect_sidecar_matches_rgb888(
++        restored.latched_framebuffer(), restored.latched_framebuffer_rgb565(),
++        gba::GbaPpu::kScreenWidth * gba::GbaPpu::kScreenHeight,
++        "PPU snapshot restored sidecar");
++
++    gba::GbaBus bus;
++    bus.rtc().set_emulated_clock(0);
++    gba::GbaPpu simulation_source;
++    if (!simulation_source.set_rgb565_sidecar_enabled(true)) std::exit(1);
++    simulation_source.latch_framebuffer(0x0414, f.io.data(), f.vram.data(),
++                                        f.oam.data(), f.pal.data());
++    const auto device_payload = gba::save_device_state(bus, simulation_source);
++    if (!simulation_source.set_rgb565_sidecar_enabled(false)) std::exit(1);
++    const auto device_payload_without_sidecar =
++        gba::save_device_state(bus, simulation_source);
++    if (device_payload != device_payload_without_sidecar ||
++        !simulation_source.set_rgb565_sidecar_enabled(true)) {
++        std::fprintf(stderr, "RGB565 sidecar changed simulation-state payload\n");
++        std::exit(1);
++    }
++    gba::GbaBus restored_bus;
++    restored_bus.rtc().set_emulated_clock(0);
++    gba::GbaPpu simulation_restored;
++    if (!simulation_restored.set_rgb565_sidecar_enabled(true) ||
++        !gba::load_device_state(restored_bus, simulation_restored,
++                                device_payload)) {
++        std::fprintf(stderr, "simulation-state restore with sidecar failed\n");
++        std::exit(1);
++    }
++    expect_sidecar_matches_rgb888(
++        simulation_restored.latched_framebuffer(),
++        simulation_restored.latched_framebuffer_rgb565(),
++        gba::GbaPpu::kScreenWidth * gba::GbaPpu::kScreenHeight,
++        "simulation-state restored sidecar");
+ }
+ 
+ int portrait_tiles(int bg, int, int y, uint16_t* tile) {
+@@ -995,15 +1303,22 @@ void test_bitmap_mode4_palette_transparency_and_page_flip() {
+     f.vram[0xA000] = 0;
+     f.vram[0xA001] = 2;
+ 
++    constexpr std::size_t kPixels =
++        gba::GbaPpu::kScreenWidth * gba::GbaPpu::kScreenHeight;
++    std::array<uint16_t, kPixels> rgb565{};
+     f.ppu.render(f.rgb.data(), 0x0404, f.io.data(), f.vram.data(),
+-                 f.oam.data(), f.pal.data());
++                 f.oam.data(), f.pal.data(), rgb565.data());
++    expect_sidecar_matches_rgb888(f.rgb.data(), rgb565.data(), kPixels,
++                                  "mode 4 backdrop/transparency sidecar");
+     expect_pixel(&f.rgb[0], 0, 0, 255,
+                  "mode 4 palette index 0 transparency");
+     expect_pixel(&f.rgb[3], 255, 0, 0,
+                  "mode 4 frame 0 palette lookup");
+ 
+     f.ppu.render(f.rgb.data(), 0x0414, f.io.data(), f.vram.data(),
+-                 f.oam.data(), f.pal.data());
++                 f.oam.data(), f.pal.data(), rgb565.data());
++    expect_sidecar_matches_rgb888(f.rgb.data(), rgb565.data(), kPixels,
++                                  "mode 4 page-flip sidecar");
+     expect_pixel(&f.rgb[0], 0, 0, 255,
+                  "mode 4 frame 1 index 0 transparency");
+     expect_pixel(&f.rgb[3], 0, 255, 0,
+@@ -1090,9 +1405,25 @@ void test_bitmap_mode_wide_center_and_margins() {
+     f.vram[239] = 2;
+     f.ppu.set_view_margins(24, 24, 0, 0);
+     std::vector<uint8_t> wide(gba::GbaPpu::kMaxFramebufferBytes, 0);
++    constexpr uint16_t kUnusedSidecarSentinel = 0xA55A;
++    std::vector<uint16_t> wide565(
++        gba::GbaPpu::kMaxFramebufferBytes / 3, kUnusedSidecarSentinel);
+ 
+     f.ppu.render(wide.data(), 0x0404, f.io.data(), f.vram.data(),
+-                 f.oam.data(), f.pal.data());
++                 f.oam.data(), f.pal.data(), wide565.data());
++    expect_sidecar_matches_rgb888(
++        wide.data(), wide565.data(),
++        static_cast<std::size_t>(f.ppu.render_width()) * f.ppu.render_height(),
++        "wide RGB565 sidecar");
++    const std::size_t used_sidecar_words =
++        static_cast<std::size_t>(f.ppu.render_width()) * f.ppu.render_height();
++    if (!std::all_of(wide565.begin() + used_sidecar_words, wide565.end(),
++                     [](uint16_t pixel) {
++                         return pixel == kUnusedSidecarSentinel;
++                     })) {
++        std::fprintf(stderr, "wide RGB565 sidecar wrote beyond active image\n");
++        std::exit(1);
++    }
+     expect_pixel(wide.data(), 0, 0, 255,
+                  "mode 4 wide left margin");
+     expect_pixel(&wide[24 * 3], 255, 0, 0,
+@@ -1926,8 +2257,11 @@ void test_latched_frame_immune_to_in_progress_scanlines() {
+ } // namespace
+ 
+ int main() {
++    test_optional_native_scanline_ownership();
+     test_alpha_native_domain_and_green_precision();
+     test_brightness_native_domain_and_green_precision();
++    test_rgb565_sidecar_exhaustive_gba_colors();
++    test_rgb565_scanline_vblank_and_restore_lifecycle();
+     test_extended_view_geometry_and_clamp();
+     test_authored_portrait_geometry_and_composition();
+     test_authored_ui_xy_uses_source_window_and_effects();
+diff --git a/tests/recompile/function_finder_test.cpp b/tests/recompile/function_finder_test.cpp
+index 61d65ce..1f919b9 100644
+--- a/tests/recompile/function_finder_test.cpp
++++ b/tests/recompile/function_finder_test.cpp
+@@ -999,88 +999,6 @@ bool callback_table_transfer(bool thumb, unsigned fault = 0) {
+ }
+ 
+ int main() {
+-    {
+-        std::vector<std::uint8_t> rom(0x40, 0);
+-        put32(rom, 0x00, 0xEA000002u); // B from +0 to +0x10
+-        put32(rom, 0x10, 0xEA000002u); // B from +0x10 to +0x20
+-        put32(rom, 0x20, 0xE12FFF1Eu); // BX lr
+-
+-        gbarecomp::FunctionFinder bounded(rom.data(), rom.size(), kBase);
+-        bounded.set_static_resume_all(false);
+-        bounded.add_seed({kBase, gbarecomp::CpuMode::Arm, "reset"});
+-        if (!bounded.run(4096, 2) || bounded.functions().size() != 2 ||
+-            !has_function(bounded, kBase, gbarecomp::CpuMode::Arm) ||
+-            !has_function(bounded, kBase + 0x10, gbarecomp::CpuMode::Arm) ||
+-            has_function(bounded, kBase + 0x20, gbarecomp::CpuMode::Arm) ||
+-            !bounded.stats().aot_selection_truncated ||
+-            bounded.stats().aot_selection_pending == 0) {
+-            std::fprintf(stderr, "explicit AOT selection did not stop at its cap\n");
+-            return 1;
+-        }
+-        const auto* selected = find_function(
+-            bounded, kBase + 0x10, gbarecomp::CpuMode::Arm);
+-        const auto body = gbarecomp::emit_function_body_str(
+-            *selected, rom.data(), rom.size(), kBase, {});
+-        if (body.find("GBARECOMP_TAIL_DISPATCH(0x08000020u)") ==
+-            std::string::npos) {
+-            std::fprintf(stderr,
+-                "bounded branch to excluded target did not use runtime dispatch\n");
+-            return 1;
+-        }
+-
+-        gbarecomp::FunctionFinder complete(rom.data(), rom.size(), kBase);
+-        complete.set_static_resume_all(false);
+-        complete.add_seed({kBase, gbarecomp::CpuMode::Arm, "reset"});
+-        if (!complete.run(1) || complete.functions().size() != 3) {
+-            std::fprintf(stderr,
+-                "legacy max-functions behavior changed by opt-in selection\n");
+-            return 1;
+-        }
+-
+-        gbarecomp::FunctionFinder invalid(rom.data(), rom.size(), kBase);
+-        invalid.set_static_resume_all(false);
+-        invalid.add_seed({kBase, gbarecomp::CpuMode::Arm, "arm-root"});
+-        invalid.add_seed({kBase + 0x30, gbarecomp::CpuMode::Thumb, "thumb-root"});
+-        if (invalid.run(4096, 1)) {
+-            std::fprintf(stderr,
+-                "selection cap accepted fewer slots than explicit ARM/Thumb roots\n");
+-            return 1;
+-        }
+-        gbarecomp::FunctionFinder unsafe_resume(rom.data(), rom.size(), kBase);
+-        unsafe_resume.add_seed({kBase, gbarecomp::CpuMode::Arm, "reset"});
+-        if (unsafe_resume.run(4096, 2)) {
+-            std::fprintf(stderr,
+-                "bounded selection accepted full static resume aliases\n");
+-            return 1;
+-        }
+-
+-        std::vector<std::uint8_t> table_rom(0x20, 0);
+-        put32(table_rom, 0x00, 0xEA000002u); // B to the table-marked +0x10
+-        put32(table_rom, 0x10, 0xE12FFF1Eu);
+-        gbarecomp::FunctionFinder table_target(
+-            table_rom.data(), table_rom.size(), kBase);
+-        table_target.set_static_resume_all(false);
+-        table_target.add_data_range(kBase + 0x10, kBase + 0x14,
+-                                    "synthetic auto jump table");
+-        table_target.add_seed({kBase, gbarecomp::CpuMode::Arm, "reset"});
+-        if (!table_target.run(4096, 2) ||
+-            has_function(table_target, kBase + 0x10, gbarecomp::CpuMode::Arm) ||
+-            table_target.collisions().empty()) {
+-            std::fprintf(stderr,
+-                "bounded selection did not report or omit a data-target entry\n");
+-            return 1;
+-        }
+-        gbarecomp::FunctionFinder empty_root(
+-            table_rom.data(), table_rom.size(), kBase);
+-        empty_root.set_static_resume_all(false);
+-        empty_root.add_data_range(kBase, kBase + 4, "synthetic data");
+-        empty_root.add_seed({kBase, gbarecomp::CpuMode::Arm, "invalid-root"});
+-        if (empty_root.run(4096, 1)) {
+-            std::fprintf(stderr,
+-                "bounded selection accepted an explicitly selected empty root\n");
+-            return 1;
+-        }
+-    }
+     for (unsigned fault=0;fault<20;++fault) if (!constant_argument_callbacks(fault)) {
+         std::fprintf(stderr,"Constant-argument callbacks failed: fault=%u\n",fault); return 1;
+     }
+diff --git a/tools/bios_smoke/main.cpp b/tools/bios_smoke/main.cpp
+index 63371ec..559e785 100644
+--- a/tools/bios_smoke/main.cpp
++++ b/tools/bios_smoke/main.cpp
+@@ -989,7 +989,7 @@ int main(int argc, char** argv) {
+ 
+     // BIOS_IF flag is at IWRAM offset 0x7FF8 (IWRAM[0x7FF8..7FF9]).
+     // The BIOS IRQ handler sets bits here; SWI IntrWait reads them.
+-    const uint8_t* iwram = bus.iwram_ptr();
++    const uint8_t* iwram = bus.iwram_read_ptr();
+     uint16_t bios_if = static_cast<uint16_t>(iwram[0x7FF8] | (iwram[0x7FF9] << 8));
+     uint32_t user_irq_handler = static_cast<uint32_t>(
+         iwram[0x7FFC]        |
+@@ -1144,7 +1144,7 @@ int main(int argc, char** argv) {
+         write_blob(args.snapshot + ".oam",   bus.oam_ptr(),   1024);
+         write_blob(args.snapshot + ".pal",   bus.pal_ptr(),   1024);
+         write_blob(args.snapshot + ".vram",  bus.vram_ptr(),  96 * 1024);
+-        write_blob(args.snapshot + ".iwram", bus.iwram_ptr(), 32 * 1024);
++        write_blob(args.snapshot + ".iwram", bus.iwram_read_ptr(), 32 * 1024);
+         write_blob(args.snapshot + ".io",    bus.io().raw(),  0x400);
+         std::printf("wrote snapshot to %s.{oam,pal,vram,iwram,io}\n",
+                     args.snapshot.c_str());
+diff --git a/tools/gba_recompile/main.cpp b/tools/gba_recompile/main.cpp
+index 1e2da50..e5c9d48 100644
+--- a/tools/gba_recompile/main.cpp
++++ b/tools/gba_recompile/main.cpp
+@@ -96,7 +96,6 @@ struct Cli {
+     uint32_t entry = 0x080000C0u;
+     uint32_t rom_base = 0x08000000u;
+     std::size_t max_functions = 4096;
+-    std::size_t aot_selection_limit = 0;
+     uint32_t codegen_shards = 0; // 0 = config value or adaptive default
+     bool ok = true;
+     bool bios_mode = false;     // set when --bios is parsed
+@@ -108,8 +107,7 @@ void print_usage() {
+         "gba_recompile --rom <path> [--entry HEX] [--symbols TSV]\n"
+         "              [--data-symbols TSV] [--config TOML]...\n"
+         "              [--out DIR] [--rom-base HEX]\n"
+-        "              [--max-functions N] [--aot-selection-limit N]\n"
+-        "              [--codegen-shards N]\n"
++        "              [--max-functions N] [--codegen-shards N]\n"
+         "              [--output-prefix IDENTIFIER_PREFIX]\n"
+         "\n"
+         "  Cart-recompile mode. Discovers functions reachable from\n"
+@@ -197,18 +195,6 @@ Cli parse_cli(int argc, char** argv) {
+             const char* v = next();
+             if (v) c.max_functions =
+                 static_cast<std::size_t>(std::strtoul(v, nullptr, 10));
+-        } else if (a == "--aot-selection-limit") {
+-            const char* v = next();
+-            char* end = nullptr;
+-            const unsigned long parsed = v ? std::strtoul(v, &end, 10) : 0;
+-            if (!v || end == v || *end != '\0' || parsed == 0 ||
+-                parsed > 1000000ul) {
+-                std::fprintf(stderr,
+-                    "--aot-selection-limit requires an integer in [1, 1000000]\n");
+-                c.ok = false;
+-                return c;
+-            }
+-            c.aot_selection_limit = static_cast<std::size_t>(parsed);
+         } else if (a == "--help" || a == "-h") {
+             print_usage();
+             c.ok = false;
+@@ -1363,13 +1349,7 @@ int main(int argc, char** argv) {
+                                       "start_vector"});
+         for (const auto& s : seeds) finder.add_seed(s);
+     }
+-    if (!finder.run(cli.max_functions, cli.aot_selection_limit)) {
+-        std::fprintf(stderr,
+-            "AOT selection rejected: limit (%zu) is below distinct manual roots, "
+-            "resume aliases are enabled, or an explicit root has no body\n",
+-            cli.aot_selection_limit);
+-        return 1;
+-    }
++    finder.run(cli.max_functions);
+ 
+     // Control-flow into a data_range. Two very different cases:
+     //
+@@ -1457,14 +1437,6 @@ int main(int argc, char** argv) {
+                 stats.functions_thumb, stats.indirect_transfer_count,
+                 stats.undefined_instr_count,
+                 stats.branch_targets_discovered);
+-    if (stats.aot_selection_limit != 0) {
+-        std::printf("  bounded AOT selection:  limit=%zu selected=%zu "
+-                    "truncated=%s pending_roots=%zu skipped_empty=%zu\n",
+-                    stats.aot_selection_limit, stats.functions_total,
+-                    stats.aot_selection_truncated ? "yes" : "no",
+-                    stats.aot_selection_pending,
+-                    stats.aot_selection_skipped_empty);
+-    }
+ 
+     if (have_cfg) {
+         std::printf("[gba_recompile discovery summary]\n");

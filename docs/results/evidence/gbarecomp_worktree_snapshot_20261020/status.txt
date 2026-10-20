@@ -1,0 +1,41 @@
+M  CMakeLists.txt
+M  src/armv4t/runtime_arm.cpp
+M  src/armv4t/runtime_arm.h
+M  src/debug/cosim_state.cpp
+MM src/debug/tcp_debug_server.cpp
+M  src/debug/ws_provenance.cpp
+M  src/debug/ws_sidecar.cpp
+M  src/gba/gba_bus.cpp
+M  src/gba/gba_bus.h
+M  src/gba/gba_ppu.cpp
+M  src/gba/gba_ppu.h
+M  src/gba/gba_simulation_state.cpp
+MM src/recompile/function_finder.cpp
+MM src/recompile/function_finder.h
+M  src/runtime/heal_gate.cpp
+ M src/runtime/multiplayer_slice.cpp
+MM src/runtime/overlay_loader.cpp
+MM src/runtime/runtime.cpp
+M  src/runtime/runtime_arm_default_aborts.cpp
+ M tests/bus/test_main.cpp
+ M tests/codegen/test_main.cpp
+M  tests/dma/bulk_test_main.cpp
+M  tests/ppu_smoke/test_main.cpp
+MM tests/recompile/function_finder_test.cpp
+M  tools/bios_smoke/main.cpp
+MM tools/gba_recompile/main.cpp
+?? AGENTS.md
+?? NEXT_TASK.md
+?? docs/DREAMCAST_SH4_FEASIBILITY.md
+?? docs/SH4_RESEARCH_PLAN.md
+?? docs/SMA2_DREAMCAST_HANDOFF.md
+?? docs/STRATA_AUDIT.md
+?? docs/handoff/
+?? docs/results/
+?? irq_bridge_bios_irq_ret_static_0x08_ref.bin
+?? irq_bridge_probe.fp
+?? irq_bridge_result.fp
+?? src/runtime/iwram_code_guard.cpp
+?? src/runtime/iwram_code_guard.h
+?? tests/irq_bridge/
+?? tests/iwram_guard/

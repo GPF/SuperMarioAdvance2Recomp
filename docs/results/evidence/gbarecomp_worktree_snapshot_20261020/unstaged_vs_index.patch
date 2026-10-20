@@ -1,0 +1,488 @@
+diff --git a/src/debug/tcp_debug_server.cpp b/src/debug/tcp_debug_server.cpp
+index f459c5c..9d36bd0 100644
+--- a/src/debug/tcp_debug_server.cpp
++++ b/src/debug/tcp_debug_server.cpp
+@@ -814,7 +814,9 @@ void dispatch(const TcpDebugServer::Context& ctx, std::string_view req,
+         struct Region { uint32_t base; uint8_t* ptr; std::size_t size; };
+         const Region regions[] = {
+             {0x02000000u, ctx.bus->ewram_ptr(), 256u * 1024u},
+-            {0x03000000u, ctx.bus->iwram_ptr(), 32u * 1024u},
++            // Resolve writable IWRAM only after the request range matches, so
++            // unrelated debug writes do not invalidate the native-code watch.
++            {0x03000000u, nullptr, 32u * 1024u},
+             {0x05000000u, ctx.bus->pal_ptr(), 1024u},
+             {0x06000000u, ctx.bus->vram_ptr(), 96u * 1024u},
+             {0x07000000u, ctx.bus->oam_ptr(), 1024u},
+@@ -822,9 +824,12 @@ void dispatch(const TcpDebugServer::Context& ctx, std::string_view req,
+         const std::size_t len = hex.size() / 2;
+         for (const Region& r : regions) {
+             if (addr < r.base || addr + len > r.base + r.size) continue;
++            uint8_t* destination = r.ptr;
++            if (r.base == 0x03000000u)
++                destination = ctx.bus->iwram_write_ptr("tcp_debug_write_mem");
+             for (std::size_t i = 0; i < len; ++i) {
+                 const unsigned long v = std::strtoul(hex.substr(i * 2, 2).c_str(), nullptr, 16);
+-                r.ptr[addr - r.base + i] = static_cast<uint8_t>(v);
++                destination[addr - r.base + i] = static_cast<uint8_t>(v);
+             }
+             char ok[96];
+             std::snprintf(ok, sizeof(ok), "{\"ok\":true,\"addr\":%llu,\"len\":%zu}",
+diff --git a/src/recompile/function_finder.cpp b/src/recompile/function_finder.cpp
+index cab372d..6633d60 100644
+--- a/src/recompile/function_finder.cpp
++++ b/src/recompile/function_finder.cpp
+@@ -2934,17 +2934,31 @@ void FunctionFinder::discover_one(uint32_t entry_addr, CpuMode entry_mode,
+     functions_.push_back(std::move(fn));
+ }
+ 
+-void FunctionFinder::run(std::size_t max_functions) {
++bool FunctionFinder::run(std::size_t max_functions,
++                         std::size_t aot_selection_limit) {
+     const std::size_t manual_seed_count = seeds_.size();
++    stats_.aot_selection_limit = aot_selection_limit;
+     std::unordered_set<uint64_t> manual_seed_keys;
+     for (const auto& s : seeds_)
+         manual_seed_keys.insert(visit_key(s.addr, s.mode));
+-    std::vector<FunctionSeed> code_copy_seeds = collect_code_copy_seeds();
+-    stats_.aot_code_copy_seeds = code_copy_seeds.size();
+-    seeds_.insert(seeds_.end(),
+-                  code_copy_seeds.begin(), code_copy_seeds.end());
+-    auto callback_seeds = collect_referenced_callback_seeds();
+-    seeds_.insert(seeds_.end(), callback_seeds.begin(), callback_seeds.end());
++    if (aot_selection_limit != 0) {
++        if (manual_seed_keys.size() > aot_selection_limit ||
++            static_resume_all_ ||
++            std::any_of(seeds_.begin(), seeds_.end(),
++                [](const FunctionSeed& seed) {
++                    return seed.alias_candidate;
++                })) {
++            return false;
++        }
++    }
++    if (aot_selection_limit == 0) {
++        std::vector<FunctionSeed> code_copy_seeds = collect_code_copy_seeds();
++        stats_.aot_code_copy_seeds = code_copy_seeds.size();
++        seeds_.insert(seeds_.end(),
++                      code_copy_seeds.begin(), code_copy_seeds.end());
++        auto callback_seeds = collect_referenced_callback_seeds();
++        seeds_.insert(seeds_.end(), callback_seeds.begin(), callback_seeds.end());
++    }
+ 
+     // Validate seeds against data_ranges before any walking. A seed
+     // landing inside a data_range is a collision (the TOML author
+@@ -2986,7 +3000,9 @@ void FunctionFinder::run(std::size_t max_functions) {
+     // is intentionally bounded during bring-up.
+     std::vector<QueuedSeed> worklist;
+     worklist.reserve(seeds_.size());
+-    for (std::size_t i = 0; i < seeds_.size(); ++i) {
++    const std::size_t initial_seed_count = aot_selection_limit
++        ? manual_seed_count : seeds_.size();
++    for (std::size_t i = 0; i < initial_seed_count; ++i) {
+         worklist.push_back(QueuedSeed{
+             seeds_[i], i < manual_seed_count});
+     }
+@@ -3003,8 +3019,16 @@ void FunctionFinder::run(std::size_t max_functions) {
+ 
+     std::size_t pos = 0;
+     while ((pos < worklist.size() || !deferred_store_callbacks_.empty() || !deferred_callback_branches_.empty()) &&
++           (aot_selection_limit == 0 ||
++            functions_.size() < aot_selection_limit) &&
+            (functions_.size() < max_functions || required_remaining > 0)) {
+         if(pos==worklist.size()) {
++            if (aot_selection_limit != 0) {
++                deferred_store_callbacks_.clear();
++                deferred_callback_branches_.clear();
++                aot_pointer_seeds_.clear();
++                continue;
++            }
+             if (deferred_store_callbacks_.empty()) {
+                 // The branch extension must not spend the bounded call-site
+                 // budget, or change traversal provenance, before the existing
+@@ -3075,6 +3099,20 @@ void FunctionFinder::run(std::size_t max_functions) {
+         discover_one(s.addr, s.mode, s.name, s.source_addr, s.speculative);
+         if (functions_.size() == before) continue;
+ 
++        // Auto-discovered table entries can collide with bytes that the
++        // finder has classified as data. Such a walk has no body; emitting
++        // it would create a dispatch stub that loops back to the same PC.
++        // In bounded selection, leave inferred targets out so the caller's
++        // normal miss policy handles them. An explicitly requested empty
++        // root is a configuration error and fails closed.
++        if (aot_selection_limit != 0 &&
++            functions_.back().end_addr <= functions_.back().addr) {
++            if (manual_seed_keys.count(s_key) != 0) return false;
++            functions_.pop_back();
++            ++stats_.aot_selection_skipped_empty;
++            continue;
++        }
++
+         // The function we just added is at the end of functions_.
+         const Function& fn = functions_.back();
+         std::vector<QueuedSeed> discovered_seeds;
+@@ -3140,33 +3178,48 @@ void FunctionFinder::run(std::size_t max_functions) {
+         // Same enqueue path as mode_switch_seeds_; the worklist dedups
+         // against anything already discovered, so a literal that points
+         // at a known function is harmlessly dropped here.
+-        for (const auto& ls : literal_pool_seeds_) {
+-            uint64_t k = visit_key(ls.addr, ls.mode);
+-            origin_mask[k] |= 2u;
+-            if (!enqueued.insert(k).second) continue;  // already queued
+-            discovered_seeds.push_back(QueuedSeed{ls, current_required});
+-            if (current_required) {
+-                ++required_remaining;
++        if (aot_selection_limit == 0) {
++            for (const auto& ls : literal_pool_seeds_) {
++                uint64_t k = visit_key(ls.addr, ls.mode);
++                origin_mask[k] |= 2u;
++                if (!enqueued.insert(k).second) continue;  // already queued
++                discovered_seeds.push_back(QueuedSeed{ls, current_required});
++                if (current_required) {
++                    ++required_remaining;
++                }
+             }
+         }
+         literal_pool_seeds_.clear();
+-        harvest_relative_callbacks();
++        if (aot_selection_limit == 0) harvest_relative_callbacks();
+         // Drain address-taken functions from pointer tables whose base was
+         // itself loaded by this reachable walk.
+-        for (const auto& as : aot_pointer_seeds_) {
+-            uint64_t k = visit_key(as.addr, as.mode);
+-            origin_mask[k] |= 2u;
+-            if (!enqueued.insert(k).second) continue;
+-            discovered_seeds.push_back(QueuedSeed{as, current_required});
+-            if (current_required) {
+-                ++required_remaining;
++        if (aot_selection_limit == 0) {
++            for (const auto& as : aot_pointer_seeds_) {
++                uint64_t k = visit_key(as.addr, as.mode);
++                origin_mask[k] |= 2u;
++                if (!enqueued.insert(k).second) continue;
++                discovered_seeds.push_back(QueuedSeed{as, current_required});
++                if (current_required) {
++                    ++required_remaining;
++                }
+             }
+         }
+         aot_pointer_seeds_.clear();
+         if (!discovered_seeds.empty()) {
+-            worklist.insert(worklist.begin() + static_cast<std::ptrdiff_t>(pos),
+-                            discovered_seeds.begin(),
+-                            discovered_seeds.end());
++            if (aot_selection_limit != 0) {
++                std::sort(discovered_seeds.begin(), discovered_seeds.end(),
++                    [](const QueuedSeed& a, const QueuedSeed& b) {
++                        if (a.seed.addr != b.seed.addr)
++                            return a.seed.addr < b.seed.addr;
++                        return a.seed.mode < b.seed.mode;
++                    });
++                worklist.insert(worklist.end(), discovered_seeds.begin(),
++                                discovered_seeds.end());
++            } else {
++                worklist.insert(
++                    worklist.begin() + static_cast<std::ptrdiff_t>(pos),
++                    discovered_seeds.begin(), discovered_seeds.end());
++            }
+         }
+         // If THIS function came from a seed (not a walk), it was
+         // discovered "as a seed", but the function's body still
+@@ -3345,6 +3398,11 @@ void FunctionFinder::run(std::size_t max_functions) {
+         if (!fn.alias_entries.empty()) ++stats_.alias_hosts_total;
+     }
+     stats_.functions_total = functions_.size();
++    stats_.aot_selection_pending = aot_selection_limit && pos < worklist.size()
++        ? worklist.size() - pos : 0;
++    stats_.aot_selection_truncated = aot_selection_limit != 0 &&
++        stats_.functions_total >= aot_selection_limit &&
++        stats_.aot_selection_pending != 0;
+     stats_.functions_arm = 0;
+     stats_.functions_thumb = 0;
+     stats_.discovered_by_walk_only = 0;
+@@ -3371,6 +3429,7 @@ void FunctionFinder::run(std::size_t max_functions) {
+             default: break;
+         }
+     }
++    return true;
+ }
+ 
+ }  // namespace gbarecomp
+diff --git a/src/recompile/function_finder.h b/src/recompile/function_finder.h
+index 127cb4d..39a4b84 100644
+--- a/src/recompile/function_finder.h
++++ b/src/recompile/function_finder.h
+@@ -138,6 +138,10 @@ struct FinderStats {
+     std::size_t redundant_manual = 0;       // in both seeds AND walk-discovered
+     std::size_t manual_seeds_only = 0;      // would be lost without seeds
+     std::size_t excluded_count = 0;         // # removed by exclude_func
++    std::size_t aot_selection_limit = 0;    // explicit opt-in output cap
++    std::size_t aot_selection_pending = 0;  // queued entries left unvisited
++    std::size_t aot_selection_skipped_empty = 0; // inferred data targets
++    bool aot_selection_truncated = false;
+     // Literal-pool harvesting (Stage 0.1): a PC-relative LDR of a word
+     // that looks like a code pointer seeds a new function entry.
+     std::size_t literal_pool_words_seen = 0;  // PC-rel literals examined
+@@ -244,9 +248,16 @@ public:
+         static_resume_all_ = enabled;
+     }
+ 
+-    // Run discovery starting from all seeds. Bounded by
+-    // `max_functions` to avoid runaways during bring-up.
+-    void run(std::size_t max_functions = 4096);
++    // Run discovery starting from all seeds. `max_functions` retains its
++    // historical meaning: optional discoveries are skipped at this threshold,
++    // while the required reachable closure can exceed it. The separate
++    // `aot_selection_limit` is an opt-in cap on emitted (addr,mode) entries.
++    // In that mode only manual roots and direct/mode-switch CFG discoveries
++    // participate; roots are processed first and discovered entries in sorted
++    // order. Omitted targets remain runtime dispatch misses for the caller's
++    // existing fallback policy to accept or reject.
++    bool run(std::size_t max_functions = 4096,
++             std::size_t aot_selection_limit = 0);
+ 
+     // Sorted-by-address output.
+     const std::vector<Function>& functions() const { return functions_; }
+diff --git a/src/runtime/multiplayer_slice.cpp b/src/runtime/multiplayer_slice.cpp
+index 00076f3..effeef5 100644
+--- a/src/runtime/multiplayer_slice.cpp
++++ b/src/runtime/multiplayer_slice.cpp
+@@ -15,7 +15,7 @@ bool opcode(const gba::GbaBus& b,std::uint32_t pc,bool thumb,std::uint32_t& word
+         word=thumb ? b.bios()->read16(pc) : b.bios()->read32(pc); return true;
+     }
+     if (pc>=0x02000000 && pc<0x03000000) { bytes=b.ewram_ptr(); off=pc&0x3ffff; }
+-    else if (pc>=0x03000000 && pc<0x04000000) { bytes=b.iwram_ptr(); off=pc&0x7fff; }
++    else if (pc>=0x03000000 && pc<0x04000000) { bytes=b.iwram_read_ptr(); off=pc&0x7fff; }
+     else if (pc>=0x08000000 && pc<0x0e000000) {
+         off=pc&0x01ffffff;
+         if (!b.rom_ptr() || off+width>b.rom_size()) return false;
+diff --git a/src/runtime/overlay_loader.cpp b/src/runtime/overlay_loader.cpp
+index 9fe7b04..e313135 100644
+--- a/src/runtime/overlay_loader.cpp
++++ b/src/runtime/overlay_loader.cpp
+@@ -669,7 +669,7 @@ bool overlay_replay_set_active(const std::vector<uint64_t>& keys, std::string* e
+                 const bool iw = w.pc >= 0x03000000u && w.pc < 0x03008000u;
+                 const bool ew = w.pc >= 0x02000000u && w.pc < 0x02040000u;
+                 if (iw || ew) {
+-                    const uint8_t* src = iw ? bus->iwram_ptr() : bus->ewram_ptr();
++                    const uint8_t* src = iw ? bus->iwram_read_ptr() : bus->ewram_ptr();
+                     w.size = iw ? 32u * 1024u : 256u * 1024u;
+                     w.base = iw ? 0x03000000u : 0x02000000u;
+                     w.owned_bytes.assign(src, src + w.size);
+diff --git a/src/runtime/runtime.cpp b/src/runtime/runtime.cpp
+index 1197b2e..2bd92c7 100644
+--- a/src/runtime/runtime.cpp
++++ b/src/runtime/runtime.cpp
+@@ -2484,7 +2484,7 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+                 if (addr >= 0x02000000u && addr + bytes <= 0x02040000u)
+                     ptr = bus.ewram_ptr() + (addr - 0x02000000u);
+                 else if (addr >= 0x03000000u && addr + bytes <= 0x03008000u)
+-                    ptr = bus.iwram_ptr() + (addr - 0x03000000u);
++                    ptr = bus.iwram_write_ptr("runtime_cheat") + (addr - 0x03000000u);
+                 if (ptr) cheats.push_back({ptr, bytes, static_cast<uint32_t>(value)});
+                 else std::fprintf(stderr, "[gbarecomp:runtime] cheat outside RAM ignored: %s\n",
+                                   item.c_str());
+@@ -4107,7 +4107,7 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+     diag_host.regions = [&](std::vector<DiagnosticRegion>& out) {
+         out.clear();
+         out.push_back({"EWRAM", bus.ewram_ptr(), 256u * 1024u});
+-        out.push_back({"IWRAM", bus.iwram_ptr(), 32u * 1024u});
++        out.push_back({"IWRAM", bus.iwram_read_ptr(), 32u * 1024u});
+         out.push_back({"CPU", &g_cpu, sizeof(g_cpu)});
+         out.push_back({"IO", bus.io().raw(), gba::GbaIo::kIoSize});
+         out.push_back({"call-stack", runtime_call_stack_data(),
+diff --git a/tests/bus/test_main.cpp b/tests/bus/test_main.cpp
+index 60071cc..2b2e62e 100644
+--- a/tests/bus/test_main.cpp
++++ b/tests/bus/test_main.cpp
+@@ -450,7 +450,8 @@ void test_matrix_memory_mapper() {
+     view=bus.native_code_view(0x080001F0u,32);
+     if (view) check_eq("native_code_view","live_mapping_bytes",view[16],0xE9u);
+     check_bool("native_code_view","outside_aperture",bus.native_code_view(0x08002000u,4)==nullptr,true);
+-    bus.iwram_ptr()[0x7FFEu]=0xA1u; bus.iwram_ptr()[0]=0xB2u;
++    uint8_t* iwram = bus.iwram_write_ptr("bus_test");
++    iwram[0x7FFEu]=0xA1u; iwram[0]=0xB2u;
+     view=bus.native_code_view(0x03007FFEu,4);
+     check_bool("native_code_view","iwram_mirror_wrap",view!=nullptr,true);
+     if (view) { check_eq("native_code_view","iwram_tail",view[0],0xA1u);
+diff --git a/tests/codegen/test_main.cpp b/tests/codegen/test_main.cpp
+index f131348..46a7da4 100644
+--- a/tests/codegen/test_main.cpp
++++ b/tests/codegen/test_main.cpp
+@@ -856,7 +856,14 @@ bool run_native_ram_matching_cases() {
+         ok &= runtime_has_static_entry(base, 0) == 0;
+         ok &= g_runtime_native_ram_base == 0xA5A5u && g_runtime_resume_pc == 0x5A5Au;
+         ok &= codegen_test::g_ticked_cycles == ticks;
++        // The force-interpreter runner avoids runtime_dispatch(), but the
++        // dispatcher itself has no g_force_interp guard. A caller that enters
++        // dispatch directly can therefore still select a byte-matched RAM
++        // template unless a per-PC force-interpreter hook vetoes it.
++        const int old_force_interp = g_force_interp;
++        g_force_interp = 1;
+         runtime_dispatch(base+2);
++        g_force_interp = old_force_interp;
+         ok &= ram_match_seen_base == base && ram_match_seen_resume ==
+             (base>=0x08000000u ? 0x08000002u : 0x03000002u);
+         ok &= runtime_native_ram_instruction_matches(base, 0x2001u, 2) != 0;
+diff --git a/tests/recompile/function_finder_test.cpp b/tests/recompile/function_finder_test.cpp
+index 1f919b9..61d65ce 100644
+--- a/tests/recompile/function_finder_test.cpp
++++ b/tests/recompile/function_finder_test.cpp
+@@ -999,6 +999,88 @@ bool callback_table_transfer(bool thumb, unsigned fault = 0) {
+ }
+ 
+ int main() {
++    {
++        std::vector<std::uint8_t> rom(0x40, 0);
++        put32(rom, 0x00, 0xEA000002u); // B from +0 to +0x10
++        put32(rom, 0x10, 0xEA000002u); // B from +0x10 to +0x20
++        put32(rom, 0x20, 0xE12FFF1Eu); // BX lr
++
++        gbarecomp::FunctionFinder bounded(rom.data(), rom.size(), kBase);
++        bounded.set_static_resume_all(false);
++        bounded.add_seed({kBase, gbarecomp::CpuMode::Arm, "reset"});
++        if (!bounded.run(4096, 2) || bounded.functions().size() != 2 ||
++            !has_function(bounded, kBase, gbarecomp::CpuMode::Arm) ||
++            !has_function(bounded, kBase + 0x10, gbarecomp::CpuMode::Arm) ||
++            has_function(bounded, kBase + 0x20, gbarecomp::CpuMode::Arm) ||
++            !bounded.stats().aot_selection_truncated ||
++            bounded.stats().aot_selection_pending == 0) {
++            std::fprintf(stderr, "explicit AOT selection did not stop at its cap\n");
++            return 1;
++        }
++        const auto* selected = find_function(
++            bounded, kBase + 0x10, gbarecomp::CpuMode::Arm);
++        const auto body = gbarecomp::emit_function_body_str(
++            *selected, rom.data(), rom.size(), kBase, {});
++        if (body.find("GBARECOMP_TAIL_DISPATCH(0x08000020u)") ==
++            std::string::npos) {
++            std::fprintf(stderr,
++                "bounded branch to excluded target did not use runtime dispatch\n");
++            return 1;
++        }
++
++        gbarecomp::FunctionFinder complete(rom.data(), rom.size(), kBase);
++        complete.set_static_resume_all(false);
++        complete.add_seed({kBase, gbarecomp::CpuMode::Arm, "reset"});
++        if (!complete.run(1) || complete.functions().size() != 3) {
++            std::fprintf(stderr,
++                "legacy max-functions behavior changed by opt-in selection\n");
++            return 1;
++        }
++
++        gbarecomp::FunctionFinder invalid(rom.data(), rom.size(), kBase);
++        invalid.set_static_resume_all(false);
++        invalid.add_seed({kBase, gbarecomp::CpuMode::Arm, "arm-root"});
++        invalid.add_seed({kBase + 0x30, gbarecomp::CpuMode::Thumb, "thumb-root"});
++        if (invalid.run(4096, 1)) {
++            std::fprintf(stderr,
++                "selection cap accepted fewer slots than explicit ARM/Thumb roots\n");
++            return 1;
++        }
++        gbarecomp::FunctionFinder unsafe_resume(rom.data(), rom.size(), kBase);
++        unsafe_resume.add_seed({kBase, gbarecomp::CpuMode::Arm, "reset"});
++        if (unsafe_resume.run(4096, 2)) {
++            std::fprintf(stderr,
++                "bounded selection accepted full static resume aliases\n");
++            return 1;
++        }
++
++        std::vector<std::uint8_t> table_rom(0x20, 0);
++        put32(table_rom, 0x00, 0xEA000002u); // B to the table-marked +0x10
++        put32(table_rom, 0x10, 0xE12FFF1Eu);
++        gbarecomp::FunctionFinder table_target(
++            table_rom.data(), table_rom.size(), kBase);
++        table_target.set_static_resume_all(false);
++        table_target.add_data_range(kBase + 0x10, kBase + 0x14,
++                                    "synthetic auto jump table");
++        table_target.add_seed({kBase, gbarecomp::CpuMode::Arm, "reset"});
++        if (!table_target.run(4096, 2) ||
++            has_function(table_target, kBase + 0x10, gbarecomp::CpuMode::Arm) ||
++            table_target.collisions().empty()) {
++            std::fprintf(stderr,
++                "bounded selection did not report or omit a data-target entry\n");
++            return 1;
++        }
++        gbarecomp::FunctionFinder empty_root(
++            table_rom.data(), table_rom.size(), kBase);
++        empty_root.set_static_resume_all(false);
++        empty_root.add_data_range(kBase, kBase + 4, "synthetic data");
++        empty_root.add_seed({kBase, gbarecomp::CpuMode::Arm, "invalid-root"});
++        if (empty_root.run(4096, 1)) {
++            std::fprintf(stderr,
++                "bounded selection accepted an explicitly selected empty root\n");
++            return 1;
++        }
++    }
+     for (unsigned fault=0;fault<20;++fault) if (!constant_argument_callbacks(fault)) {
+         std::fprintf(stderr,"Constant-argument callbacks failed: fault=%u\n",fault); return 1;
+     }
+diff --git a/tools/gba_recompile/main.cpp b/tools/gba_recompile/main.cpp
+index e5c9d48..1e2da50 100644
+--- a/tools/gba_recompile/main.cpp
++++ b/tools/gba_recompile/main.cpp
+@@ -96,6 +96,7 @@ struct Cli {
+     uint32_t entry = 0x080000C0u;
+     uint32_t rom_base = 0x08000000u;
+     std::size_t max_functions = 4096;
++    std::size_t aot_selection_limit = 0;
+     uint32_t codegen_shards = 0; // 0 = config value or adaptive default
+     bool ok = true;
+     bool bios_mode = false;     // set when --bios is parsed
+@@ -107,7 +108,8 @@ void print_usage() {
+         "gba_recompile --rom <path> [--entry HEX] [--symbols TSV]\n"
+         "              [--data-symbols TSV] [--config TOML]...\n"
+         "              [--out DIR] [--rom-base HEX]\n"
+-        "              [--max-functions N] [--codegen-shards N]\n"
++        "              [--max-functions N] [--aot-selection-limit N]\n"
++        "              [--codegen-shards N]\n"
+         "              [--output-prefix IDENTIFIER_PREFIX]\n"
+         "\n"
+         "  Cart-recompile mode. Discovers functions reachable from\n"
+@@ -195,6 +197,18 @@ Cli parse_cli(int argc, char** argv) {
+             const char* v = next();
+             if (v) c.max_functions =
+                 static_cast<std::size_t>(std::strtoul(v, nullptr, 10));
++        } else if (a == "--aot-selection-limit") {
++            const char* v = next();
++            char* end = nullptr;
++            const unsigned long parsed = v ? std::strtoul(v, &end, 10) : 0;
++            if (!v || end == v || *end != '\0' || parsed == 0 ||
++                parsed > 1000000ul) {
++                std::fprintf(stderr,
++                    "--aot-selection-limit requires an integer in [1, 1000000]\n");
++                c.ok = false;
++                return c;
++            }
++            c.aot_selection_limit = static_cast<std::size_t>(parsed);
+         } else if (a == "--help" || a == "-h") {
+             print_usage();
+             c.ok = false;
+@@ -1349,7 +1363,13 @@ int main(int argc, char** argv) {
+                                       "start_vector"});
+         for (const auto& s : seeds) finder.add_seed(s);
+     }
+-    finder.run(cli.max_functions);
++    if (!finder.run(cli.max_functions, cli.aot_selection_limit)) {
++        std::fprintf(stderr,
++            "AOT selection rejected: limit (%zu) is below distinct manual roots, "
++            "resume aliases are enabled, or an explicit root has no body\n",
++            cli.aot_selection_limit);
++        return 1;
++    }
+ 
+     // Control-flow into a data_range. Two very different cases:
+     //
+@@ -1437,6 +1457,14 @@ int main(int argc, char** argv) {
+                 stats.functions_thumb, stats.indirect_transfer_count,
+                 stats.undefined_instr_count,
+                 stats.branch_targets_discovered);
++    if (stats.aot_selection_limit != 0) {
++        std::printf("  bounded AOT selection:  limit=%zu selected=%zu "
++                    "truncated=%s pending_roots=%zu skipped_empty=%zu\n",
++                    stats.aot_selection_limit, stats.functions_total,
++                    stats.aot_selection_truncated ? "yes" : "no",
++                    stats.aot_selection_pending,
++                    stats.aot_selection_skipped_empty);
++    }
+ 
+     if (have_cfg) {
+         std::printf("[gba_recompile discovery summary]\n");
