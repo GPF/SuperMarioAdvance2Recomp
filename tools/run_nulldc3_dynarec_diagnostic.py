@@ -61,6 +61,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rom-sha256", required=True)
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--timeout-seconds", type=float, default=120.0)
+    parser.add_argument("--post-summary-grace-seconds", type=float, default=10.0,
+                        help="how long to wait for the emulator to exit by itself after the "
+                             "guest summary; a terminated emulator is still FAIL (status -15)")
     return parser.parse_args()
 
 
@@ -195,7 +198,7 @@ def run(args: argparse.Namespace) -> int:
 
             if final_seen:
                 result["supervisor_action"] = "waiting_for_guest_exit"
-                exit_deadline = time.monotonic() + 10.0
+                exit_deadline = time.monotonic() + float(args.post_summary_grace_seconds)
                 while time.monotonic() < exit_deadline and proc.poll() is None:
                     for _, _ in selector.select(0.1):
                         try:
