@@ -1,3 +1,49 @@
+# Runtime SH-4 dynarec under nullDC3 — startup fixed, diagnostic PASS (emulator evidence only)
+
+Two independent defects blocked the dynarec ELF; both are fixed without touching
+GBARecomp, KOS, the compiler, or nullDC3.
+
+1. **Constructor crash (root cause).** The merged GBARecomp runtime added
+   `thread_local` objects (`g_runtime_tail_arg`, `g_runtime_native_ram_base`, the
+   `ram_entry` static in `runtime_arm.cpp:974`, `scratch` in `gba_bus.cpp:643`),
+   so the linker emitted a 64-byte `PT_TLS` header whose `.tbss` sits at
+   `0x8c197d4c`, the same address as `.ctors`. In the ELF itself this overlap is
+   legitimate (NOBITS TLS template, filesz 0) and the on-disk `.ctors` table is
+   valid (`-1`, ten `__GLOBAL__sub_I_*` entries, `0`). nullDC3's REIOS loader
+   (`libswirl/reios/reios_elf.cpp:44-71`, measured by reading source) copies and
+   zero-fills **every** program header regardless of `p_type`, so `PT_TLS`
+   memset 0x40 bytes over the freshly copied `.ctors`; `___do_global_ctors_aux`
+   then called address 0 (PC `0x00000002`). The pre-merge control ELF
+   (`ce17c68f…54c4c2d`) has no `PT_TLS`. Inference: real dcload/KOS loaders
+   honour `p_type`, so hardware was likely unaffected, but removing TLS is
+   correct for the single-threaded Dreamcast runner either way.
+   **Fix:** `apply_no_tls()` in `tools/prepare_dreamcast_framework.py` strips
+   the TLS qualifier in the staged overlay copy only.
+2. **Harness staging.** `tools/run_nulldc3_dynarec_diagnostic.py` staged assets
+   as symlinks, but nullDC3's `/pc` opens with `RESOLVE_NO_SYMLINKS`
+   (`dcload_fs.cpp:135`), so `game.toml`, BIOS and ROM were invisible and an
+   uncaught `std::filesystem_error` aborted. It now stages hash-checked copies.
+
+Result (run dir `/tmp/sma2-dynarec-nulldc3-tlsfix-20261020-run2`, evidence in
+`docs/results/evidence/sma2_nulldc3_dynarec_tlsfix_20261020/`): ELF
+`/tmp/sma2-dynarec-tlsfix-dc-20261020/SuperMarioWorldRecomp.elf`
+SHA-256 `41b2051ea2a05feb084bdca8c6dd6718a1161a110cc2fe39ad3ac057bb1faab3`;
+strip-debug derivative loaded by REIOS
+`347126a2c669c7e2f15d718429d0ed006cb323c1c2f75237b2ad071fa67588f5`; 3 program
+headers, no `PT_TLS`. Log shows `[sma2] main entered`, backend
+`sh4-dynarec`, `[sma2-jit] backend init succeeded`, and stage1/2/3/D/E each
+PASS with 1 native block, 0 fallback, 0 mismatches, CPSR/IWRAM match and
+native==interpreter cycles. Runner verdict `guest_diagnostic_verdict=PASS`,
+emulator status 0, `final_summary_seen=true`. This is the runtime dynarec path
+(empty static dispatch table, so static AOT could not have run); it covers
+five tiny blocks, not gameplay. Guest `main()` return status is not exposed by
+nullDC3. The 343-entry AOT corpus and its hashes were not touched. Host:
+`py_compile`, ppu-timing test, asset-fallback test, `git diff --check` pass;
+`test_sma2_cart_aot_diag_result.py` needs a probe binary and was not run.
+Remaining: no gameplay-length dynarec run, no hardware validation (none
+launched), EWRAM not in the JIT comparison, GBARecomp working tree still
+holds uncommitted state this build depends on.
+
 # Runtime SH-4 dynarec under nullDC3 — HOLD
 
 The recovered bounded AOT diagnostic remains accepted only for its single

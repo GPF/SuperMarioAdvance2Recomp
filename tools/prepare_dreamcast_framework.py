@@ -15,6 +15,26 @@ def replace_once(path: pathlib.Path, before: str, after: str) -> None:
     path.write_text(text.replace(before, after, 1))
 
 
+def apply_no_tls(dest: pathlib.Path) -> None:
+    """Remove thread-local storage from the Dreamcast overlay.
+
+    A thread-local object makes the linker emit a PT_TLS program header whose
+    .tbss shares the address of .ctors. nullDC3's REIOS loader
+    (reios_elf.cpp) loads every program header regardless of p_type and
+    zero-fills memsz - filesz, so PT_TLS erases the first 0x40 bytes of
+    .ctors and ___do_global_ctors_aux jumps to 0. The Dreamcast runner has one
+    guest thread, so the TLS qualifier carries no meaning here.
+    """
+    header = dest / "src/armv4t/runtime_arm.h"
+    replace_once(header, "#  define GBARECOMP_TAIL_ARG_TLS thread_local\n",
+                 "#  define GBARECOMP_TAIL_ARG_TLS\n")
+    replace_once(header, "#  define GBARECOMP_TAIL_ARG_TLS _Thread_local\n",
+                 "#  define GBARECOMP_TAIL_ARG_TLS\n")
+    replace_once(dest / "src/gba/gba_bus.cpp",
+                 "static thread_local uint8_t scratch[64];",
+                 "static uint8_t scratch[64];")
+
+
 def main() -> int:
     if len(sys.argv) != 3:
         print("usage: prepare_dreamcast_framework.py GBARECOMP_ROOT DEST", file=sys.stderr)
@@ -207,6 +227,7 @@ bool overlay_compile_one(const OverlayWorkItem&, const std::string&,
     overlay_compile.write_text(
         stub + original_compile + "\n#endif // SMA2_DREAMCAST\n"
     )
+    apply_no_tls(dest)
     print(f"Staged SMA2 compatibility overlay: {dest}")
     return 0
 

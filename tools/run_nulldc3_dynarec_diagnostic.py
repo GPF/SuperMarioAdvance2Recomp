@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Run the bounded SMA2 SH-4 dynarec diagnostic once under nullDC3.
 
-The run directory must be new. The script stages only symlinks to the supplied
-game assets, selects the GBA runtime dynarec through /pc, captures the serial
+The run directory must be new. The script stages regular-file copies of the
+supplied game assets (nullDC3's /pc refuses symlinks), selects the GBA runtime dynarec through /pc, captures the serial
 console, validates stage outcomes and native block evidence, and records the
 emulator process status separately from the guest diagnostic verdict.
 """
@@ -16,6 +16,7 @@ import os
 import pty
 import re
 import selectors
+import shutil
 import subprocess
 import sys
 import time
@@ -94,9 +95,9 @@ def run(args: argparse.Namespace) -> int:
     (pcroot / Path(bios_spec["path"]).parent).mkdir(parents=True)
     (pcroot / Path(rom_spec["path"]).parent).mkdir(parents=True)
     (pcroot / "saves").mkdir(exist_ok=True)
-    (pcroot / "game.toml").symlink_to(manifest)
-    (pcroot / bios_spec["path"]).symlink_to(bios)
-    (pcroot / rom_spec["path"]).symlink_to(rom)
+    shutil.copyfile(manifest, pcroot / "game.toml")
+    shutil.copyfile(bios, pcroot / bios_spec["path"])
+    shutil.copyfile(rom, pcroot / rom_spec["path"])
     (pcroot / "sma2_cpu_backend.txt").write_text("j\n")
 
     portable = run_dir / "portable"

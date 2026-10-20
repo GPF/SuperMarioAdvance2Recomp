@@ -1,0 +1,75 @@
+{
+  "backend_initialized": true,
+  "diagnostic_entry_reached": true,
+  "elf": "/tmp/sma2-dynarec-tlsfix-dc-20261020/SuperMarioWorldRecomp.stripped.elf",
+  "elf_loaded": true,
+  "emulator": "/home/gpf/code/nulldc3-dcload-pc/build/nulldc3",
+  "emulator_process_status": 0,
+  "fatal_guest_marker": null,
+  "final_summary_seen": true,
+  "guest_diagnostic_verdict": "PASS",
+  "guest_program_return_status": "not exposed by nullDC3 process status",
+  "pid": 132968,
+  "process_started": true,
+  "reason": "all required dynarec stages passed with native blocks and zero fallback",
+  "run_dir": "/tmp/sma2-dynarec-nulldc3-tlsfix-20261020-run2",
+  "stage_results": {
+    "stage1": {
+      "blocks": 1,
+      "cpsr": "match",
+      "fallback": 0,
+      "instructions": 10,
+      "interpreter_cycles": 58,
+      "iwram": "match",
+      "mismatches": 0,
+      "native_cycles": 58,
+      "status": "PASS"
+    },
+    "stage2": {
+      "blocks": 1,
+      "cpsr": "match",
+      "fallback": 0,
+      "instructions": 7,
+      "interpreter_cycles": 43,
+      "iwram": "match",
+      "mismatches": 0,
+      "native_cycles": 43,
+      "status": "PASS"
+    },
+    "stage3": {
+      "blocks": 1,
+      "cpsr": "match",
+      "fallback": 0,
+      "instructions": 8,
+      "interpreter_cycles": 46,
+      "iwram": "match",
+      "mismatches": 0,
+      "native_cycles": 46,
+      "status": "PASS"
+    },
+    "stageD": {
+      "blocks": 1,
+      "cpsr": "match",
+      "fallback": 0,
+      "instructions": 8,
+      "interpreter_cycles": 57,
+      "iwram": "match",
+      "mismatches": 0,
+      "native_cycles": 57,
+      "status": "PASS"
+    },
+    "stageE": {
+      "blocks": 1,
+      "cpsr": "match",
+      "fallback": 0,
+      "instructions": 7,
+      "interpreter_cycles": 43,
+      "iwram": "match",
+      "mismatches": 0,
+      "native_cycles": 43,
+      "status": "PASS"
+    }
+  },
+  "supervisor_action": "guest_exit_observed",
+  "timeout_seconds": 180.0
+}
