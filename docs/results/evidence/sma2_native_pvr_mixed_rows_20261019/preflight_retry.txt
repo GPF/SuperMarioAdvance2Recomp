@@ -1,0 +1,14 @@
+KOS environment sourced in network-enabled launch shell
+KOS_CC_BASE=/opt/toolchains/dc/sh-elf
+/opt/toolchains/dc/sh-elf/bin/sh-elf-gcc
+sh-elf-gcc (GCC) 17.0.0 20260705 (experimental)
+udp_bind=PASS
+--- verified artifacts and mounted inputs ---
+cf5fbacbb005e49366a91cf9961b9c6990f5a971d121539580cb911b3f5c7ac7  /home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_native_pvr_mixed_rows_20261019/SuperMarioWorldRecomp_mixed_rows.elf
+83fd6ab67147a80cda61704f9f1ff06d78cc24d6dbed0e0f932b54e58962f0ef  /tmp/sma2-bg0-mgbadc-source/src/platform/dreamcast/native/dc-pvr-gba.c
+ecbb5dd7835e709570362dae8d23caf61291af61a1d5e1283f27bf19a17d1f2a  /tmp/sma2-native-pvr-mixed-hw-20261019/game.toml
+cf2f2a80376525b99943cf48c98b08da45e8c578b2e7bac02b535ab9b8d9f188  /tmp/sma2-native-pvr-mixed-hw-20261019/sma2_checkpoint.bin
+fd2547724b505f487e6dcb29ec2ecff3af35a841a77ab2e85fd87350abd36570  /tmp/sma2-native-pvr-mixed-hw-20261019/gbarecomp/bios/gba_bios.bin
+63d9fff04c635990a5c205a99ea64bfa698aa5cb9ec1333360063bbee949a4f3  /tmp/sma2-native-pvr-mixed-hw-20261019/roms/super_mario_world_usa.gba
+--- lock availability ---
+lock absent

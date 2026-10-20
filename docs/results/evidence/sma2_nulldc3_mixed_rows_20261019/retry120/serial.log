@@ -1,0 +1,184 @@
+Personality: 00000000
+Updated personality: 00000000
+Linux paging: 4096 00001000 00000FFF
+Virtual cfg config:Headless=yes
+Virtual cfg audio:backend=none
+Virtual cfg config:Debug.SerialConsoleEnabled=yes
+Virtual cfg config:Exit.AfterVblanks=120
+Virtual cfg config:pvr.backend=refsw2
+Virtual cfg config:Exit.FrameHash=yes
+Virtual cfg config:Dcload.PcRoot=/home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/pcroot
+Virtual cfg config:Dcload.PcWritable=yes
+Using '/home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/mixed_rows.stripped.elf' as reios bin/elf file
+
+Config dir is: /home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/portable/
+Data dir is:   /home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/portable/
+Warning: Unable to open the config file '/home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/portable/emu.cfg' for reading (No such file or directory)
+Creating new empty config file at '/home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/portable/emu.cfg'
+WARNING: Audio backend set to "none"!
+WARNING: Running without audio!
+Info: nvmem is enabled, with addr space of size 512MB
+Info: p_sh4rcb: 0x7d8f1a920000 virt_ram_base: 0x7d8f22a20000
+Unable to open VMU save file "/home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/portable/vmu_save_A1.bin", creating new file
+Initialising empty VMU...
+Unable to open VMU save file "/home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/portable/vmu_save_A2.bin", creating new file
+Initialising empty VMU...
+No nvmem loaded
+reios: Init
+Did not load bios, using reios
+RendIF: renderer: refsw2
+RendIF: Using renderer: refsw2
+Sh4 Reset
+recSh4 Init
+cntx // fpcb offset: -135266304 // pc offset: -184 // pc A0000000
+Using MCPU Recompiler
+Using SCPU Interpreter
+Using DSP Interpreter
+-----------------
+REIOS: Booting up
+-----------------
+[dcload] /pc provided: root=/home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/pcroot writable=yes magic@8C004004 vector@8C004008 trap@8C004010
+
+--
+KallistiOS v2.3.0 [dreamcast/pristine]
+  Git revision: 8e704086
+  Sun Oct 18 11:02:29 PM MST 2026
+  gpf@gpf-B550-Phantom-Gaming-4-ac:/opt/toolchains/dc/kos
+  sh-elf-gcc (GCC) 17.0.0 20260705 (experimental)
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0FD3D0 PR: 0x8C0FD3D0: Out of range on register index 1f000084
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0FD3D0 PR: 0x8C0FD3D0: Out of range on register index 1f000084
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0FD3D0 PR: 0x8C0FD3D0: Out of range on register index 1f000084
+VREG = 00 ARMRST 01
+VREG = 00 ARMRST 00
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/holly/sb.cpp:Read:640 PC: 0x8C107AA6 PR: 0x8C107AA6: sb_ReadMem write-only reg 005f74ec 4
+
+
+GDROM:	HLE GDROM_INIT
+GDROM:	CMD INIT CC:18 PRM:0
+maple: active drivers:
+    Dreameye (Camera): Camera
+    Sound Input Peripheral: Microphone
+    PuruPuru (Vibration) Pack: JumpPack
+    VMU Driver: Clock, LCD, MemoryCard
+    Mouse Driver: Mouse
+    Keyboard Driver: Keyboard
+    Controller Driver: Controller
+    Lightgun: LightGun
+vid_set_mode: 640x480IL NTSC with 1 framebuffers.
+VREG = 03 ARMRST 00
+dc-load console support enabled
+**WARNING** Too fast Maple DMA: 0 5 6.935 1002009
+maple: attached devices:
+  A0: Dreamcast Controller           (01000000: Controller)
+  A1: Visual Memory                  (0e000000: Clock, LCD, MemoryCard)
+  A2: Visual Memory                  (0e000000: Clock, LCD, MemoryCard)
+
+[sma2] main entered
+[dreamcast-checkpoint] Y-button save enabled: /pc/sma2_checkpoint.bin
+[sma2] asset found: /pc/game.toml
+[sma2] asset found: /pc/gbarecomp/bios/gba_bios.bin
+[sma2] asset found: /pc/roms/super_mario_world_usa.gba
+[sma2] runtime entered
+[sma2] config parsed
+[sma2] resolving BIOS path: /pc/gbarecomp/bios/gba_bios.bin
+[asset] opening /pc/gbarecomp/bios/gba_bios.bin
+[asset] ftell 16384
+[sma2] BIOS path resolved
+[asset] opening /pc/roms/super_mario_world_usa.gba
+[asset] ftell 4194304
+[sma2] ROM path resolved
+[sma2] BIOS loaded
+[sma2] ROM loaded: 4194304 bytes
+[sma2] constructing GBA bus and PPU
+scanline_backend=HLE (tile-span native-color composition)
+cpu_backend=interpreter (GBARECOMP_FORCE_INTERP)
+save_config source=game-config type=EEPROM size=8192 (detected=EEPROM signature="EEPROM_V" @ 0x1779D0)
+self_heal_recompile=DISABLED (build default - pure Stage-1 interpreter bridge this session)
+vid_set_mode: 320x240 NTSC with 1 framebuffers.
+VREG = 03 ARMRST 00
+mgba-dc: GBACoreCreate: entered
+mgba-dc: GBACoreCreate: gbacore=0x8c8f2a00 core(&gbacore->d)=0x8c8f2a00 sizeof(GBACore)=34080
+mgba-dc: layout PATH_MAX=1024 sizeof(mCore)=1720 init_offset=1432
+mgba-dc: GBACoreCreate: right after assignment, core->init=0x8c08b15c _GBACoreInit=0x8c08b15c
+mgba-dc: GBACoreCreate: about to return, core=0x8c8f2a00 core->init=0x8c08b15c
+mgba-dc: _GBACoreInit: allocating cpu/gba
+mgba-dc: _GBACoreInit: cpu/gba allocated
+mgba-dc: _GBACoreInit: GBACreate
+mgba-dc: _GBACoreInit: GBACreate done, ARMSetComponents
+mgba-dc: _GBACoreInit: ARMSetComponents done, ARMInit
+mgba-dc: GBAInit: GBAMemoryInit
+mgba-dc: GBAInit: GBAMemoryInit done
+mgba-dc: GBAInit: GBASavedataInit
+mgba-dc: GBAInit: GBASavedataInit done
+mgba-dc: GBAInit: GBAVideoInit
+mgba-dc: GBAInit: GBAVideoInit done
+mgba-dc: GBAInit: GBAAudioInit
+mgba-dc: GBAInit: GBAAudioInit done
+mgba-dc: GBAInit: GBAIOInit
+mgba-dc: GBAInit: GBAIOInit done
+mgba-dc: GBAInit: GBASIOInit
+mgba-dc: GBAInit: GBASIOInit done
+mgba-dc: GBAInit: GBAHardwareInit
+mgba-dc: GBAInit: GBAHardwareInit done
+mgba-dc: GBAInit: GBAChecksum
+mgba-dc: GBAInit: GBAChecksum done
+mgba-dc: GBAInit: returning
+mgba-dc: _GBACoreInit: ARMInit done (this runs GBAInit via component->init)
+mgba-dc: _GBACoreInit: mRTCGenericSourceInit done, video renderer creates
+mgba-dc: _GBACoreInit: video renderer creates done
+mgba-dc: _GBACoreInit: mVideoThreadProxyCreate
+mgba-dc: _GBACoreInit: mVideoThreadProxyCreate done
+mgba-dc: _GBACoreInit: mDirectorySetInit
+mgba-dc: _GBACoreInit: mDirectorySetInit done
+mgba-dc: _GBACoreInit: returning true
+SMA2_NATIVE_PVR_RESEED frame=0 bytes=100352
+SMA2_NATIVE_PVR_INIT shadow=0x8c8f2a00 gba=0x8c8faf28 renderer=0x8c8f3188 mode=validation shadow_cpu_steps=0
+[dreamcast-checkpoint] inactive RTC seeded for snapshot codec
+SMA2_NATIVE_PVR_RESEED frame=200 bytes=100352
+CHECKPOINT_OK restored frame=200
+VREG = 03 ARMRST 01
+VREG = 03 ARMRST 00
+[dreamcast-audio] KOS mono PCM stream started at 32768 Hz
+dreamcast_video=320x240 RGB565, centered GBA 240x160
+[gbarecomp:runtime] present-in-place ON (frame-boundary resume misses eliminated structurally; GBARECOMP_PRESENT_IN_PLACE=0 to disable)
+[dreamcast-input] maple_buttons=0x00000000 rtrig=0 keyinput=0x03ff
+SMA2_NATIVE_PVR_MIXED_FIXTURE band_start=0 band_rows=8 obj_bounds_clear=1
+SMA2_NATIVE_PVR_FRAME frame=1 guest_frame=200 rows=160 native=152 fallback=8 forced_reasons=win:0,bitmap:0,blend:0,bg_mosaic:0,obj_mosaic:0,backend:0,diagnostic_force:8 captured=160 displayed=160 fallback_rows=8 software_oracle=complete ppu_state_fnv=12f36c915005eac5 rgb888_fnv=e6b64e95140b714f rgb565_fnv=0d585ef913d00d74 sync_bytes=0 sync_writes=0 upload_us=884 submit_us=254
+SMA2_NATIVE_PVR_FALLBACK_ROWS 0:40 1:40 2:40 3:40 4:40 5:40 6:40 7:40
+[sma2-perf] path=present-in-place elapsed_us=242032 interval_us=242032 guest_frame=201 delta_frames=1 fps=4.131 instructions=86541 ips=357560 cycles=280897 cps=1160577 interp_dispatches=86541 guest_ms=241 avg_guest_us_per_frame=241689 render_ms=0 present_ms=0 vblank_wait_ms=0 video_convert_ms=0 audio_work_ms=0 audio_submit_ms=0 audio_generated=1096 audio_queued=1096 audio_consumed_delta=1096 audio_silence_delta=11192 input_ms=0 pacer_wait_ms=0 sync_ms=0 presents=1 pc=0x0800052e state=thumb keyinput=0x03ff
+SMA2_NATIVE_PVR_MIXED_FIXTURE band_start=0 band_rows=8 obj_bounds_clear=1
+SMA2_NATIVE_PVR_FRAME frame=2 guest_frame=201 rows=160 native=152 fallback=8 forced_reasons=win:0,bitmap:0,blend:0,bg_mosaic:0,obj_mosaic:0,backend:0,diagnostic_force:8 captured=160 displayed=160 fallback_rows=8 software_oracle=complete ppu_state_fnv=12f36c915005eac5 rgb888_fnv=e6b64e95140b714f rgb565_fnv=0d585ef913d00d74 sync_bytes=1056 sync_writes=520 upload_us=302 submit_us=251
+SMA2_NATIVE_PVR_FALLBACK_ROWS 0:40 1:40 2:40 3:40 4:40 5:40 6:40 7:40
+SMA2_NATIVE_PVR_MIXED_FIXTURE_CHECK frame=201 native=152 fallback=8 backend_fallback=8 result=PASS
+SMA2_NATIVE_PVR_CAPTURE_COUNTERS frame=201 rows=160 native=152 fallback=8 captured=160 displayed=160 fallback_rows=8 result=PASS
+SMA2_NATIVE_PVR_LINE_CLASS frame=201 0:fallback-40 1:fallback-40 2:fallback-40 3:fallback-40 4:fallback-40 5:fallback-40 6:fallback-40 7:fallback-40 8:native 9:native 10:native 11:native 12:native 13:native 14:native 15:native 16:native 17:native 18:native 19:native 20:native 21:native 22:native 23:native 24:native 25:native 26:native 27:native 28:native 29:native 30:native 31:native 32:native 33:native 34:native 35:native 36:native 37:native 38:native 39:native 40:native 41:native 42:native 43:native 44:native 45:native 46:native 47:native 48:native 49:native 50:native 51:native 52:native 53:native 54:native 55:native 56:native 57:native 58:native 59:native 60:native 61:native 62:native 63:native 64:native 65:native 66:native 67:native 68:native 69:native 70:native 71:native 72:native 73:native 74:native 75:native 76:native 77:native 78:native 79:native 80:native 81:native 82:native 83:native 84:native 85:native 86:native 87:native 88:native 89:native 90:native 91:native 92:native 93:native 94:native 95:native 96:native 97:native 98:native 99:native 100:native 101:native 102:native 103:native 104:native 105:native 106:native 107:native 108:native 109:native 110:native 111:native 112:native 113:native 114:native 115:native 116:native 117:native 118:native 119:native 120:native 121:native 122:native 123:native 124:native 125:native 126:native 127:native 128:native 129:native 130:native 131:native 132:native 133:native 134:native 135:native 136:native 137:native 138:native 139:native 140:native 141:native 142:native 143:native 144:native 145:native 146:native 147:native 148:native 149:native 150:native 151:native 152:native 153:native 154:native 155:native 156:native 157:native 158:native 159:native
+SMA2_NATIVE_PVR_CAPTURE frame=201 pixels=38400 mismatches=36888 first_x=0 first_y=0 software_rgb888_fnv=e6b64e95140b714f software_rgb565_fnv=0d585ef913d00d74 pvr_rgb565_fnv=38022793e07da2d0 state_fnv=12f36c915005eac5 rows=160 native=152 fallback=8 ready=0 render_done=0 vblank=1 front=0xa511f000 back=0xa591f000 front_after=0xa511f000 back_after=0xa591f000 stable=1 capture_us=10837 upload_us=302 submit_us=251 oracle=FAIL
+SMA2_NATIVE_PVR_ACCEPTANCE frame=201 result=FAIL
+VREG = 03 ARMRST 01
+VREG = 03 ARMRST 01
+VREG = 03 ARMRST 01
+-----------------
+REIOS: Booting up
+-----------------
+[dcload] /pc provided: root=/home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/pcroot writable=yes magic@8C004004 vector@8C004008 trap@8C004010
+
+--
+KallistiOS v2.3.0 [dreamcast/pristine]
+  Git revision: 8e704086
+  Sun Oct 18 11:02:29 PM MST 2026
+  gpf@gpf-B550-Phantom-Gaming-4-ac:/opt/toolchains/dc/kos
+  sh-elf-gcc (GCC) 17.0.0 20260705 (experimental)
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0FD3D0 PR: 0x8C0FD3D0: Out of range on register index 1f000084
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0FD3D0 PR: 0x8C0FD3D0: Out of range on register index 1f000084
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0FD3D0 PR: 0x8C0FD3D0: Out of range on register index 1f000084
+VREG = 03 ARMRST 01
+VREG = 03 ARMRST 00
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/holly/sb.cpp:Read:640 PC: 0x8C107AA6 PR: 0x8C107AA6: sb_ReadMem write-only reg 005f74ec 4
+
+Saved /home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/retry120/portable/data/dc_nvmem.bin as nvmem
+
+
+nulldc-exit: reason=vblanks emu_s=2.034014 vblanks=120 wall_s=1.455185 speed_pct=138.6 frame=9ac53868960112ad frame_size=640x480
+recSh4 Term
+Sh4 Term
+Texture cache cleared

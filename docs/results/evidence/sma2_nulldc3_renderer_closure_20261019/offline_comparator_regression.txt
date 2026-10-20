@@ -1,0 +1,24 @@
+Offline only. No source build, emulator launch, or hardware launch.
+
+All-native frame 201
+Input serial: evidence/sma2_nulldc3_frame201_offline_audit_20261019/serial.log
+Input captures: evidence/sma2_nulldc3_frame201_offline_audit_20261019/pcroot/*frame201_*.rgb565
+Exit: 0
+Ownership: 160 native, 0 fallback
+Raw: 36888/38400 mismatches; first (0,0), expected 0x6dbf, actual 0x657e
+Ownership model: 0/38400; RESULT=PASS
+
+Mixed frame 201
+Input serial: evidence/sma2_nulldc3_mixed_rows_20261019/retry120/serial.log
+Input captures: evidence/sma2_nulldc3_mixed_rows_20261019/retry120/pcroot/*frame201_*.rgb565
+Exit: 0
+Ownership: 152 native, 8 fallback
+Raw: 36888/38400 mismatches; first (0,0), expected 0x6dbf, actual 0x659e
+Ownership model: 0/38400; RESULT=PASS
+
+Negative cases
+Missing ownership record: exit 2, RESULT=ERROR, rejected before capture read.
+Inconsistent native-row counter: exit 2, rejected against row ownership.
+Capture-file hash mismatch: exit 2, rejected against serial hash.
+Missing front/back metadata: exit 2, rejected as incomplete page metadata.
+Changed front page after capture: exit 2, rejected as ownership change.

@@ -1,0 +1,15 @@
+lock=free
+kos_tool=absent
+elf_sha256=5d79a25a7786da17aee4ef041d5d55db46e12943601ac8b0588d82f3788a1e08
+rom_sha256=63d9fff04c635990a5c205a99ea64bfa698aa5cb9ec1333360063bbee949a4f3
+bios_sha256=fd2547724b505f487e6dcb29ec2ecff3af35a841a77ab2e85fd87350abd36570
+checkpoint_sha256=cf2f2a80376525b99943cf48c98b08da45e8c578b2e7bac02b535ab9b8d9f188
+renderer_sha256=83fd6ab67147a80cda61704f9f1ff06d78cc24d6dbed0e0f932b54e58962f0ef
+bridge_sha256=9b123c431767de6de697a80c268252853e2e35f338cec65bb1016cf81033754a
+kos_environ=/opt/toolchains/dc/kos/environ.sh
+sh_elf_gcc=/opt/toolchains/dc/sh-elf/bin/sh-elf-gcc
+gcc_version=17.0.0
+udp_socket=PASS
+launch_ip=192.168.0.128
+launcher=/home/gpf/code/dreamcast/mGBADC/tools/dc-load/kos-tool-locked.sh
+lock_path=/tmp/mgbadc-dreamcast-console.lock

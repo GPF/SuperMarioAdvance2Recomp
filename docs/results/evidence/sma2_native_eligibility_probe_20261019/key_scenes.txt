@@ -1,0 +1,6 @@
+g_599: eligible=160 win=0 bitmap=0 blend=0 mosaic=0 dispcnt: 1600 x160
+g_999: eligible=160 win=0 bitmap=0 blend=0 mosaic=0 dispcnt: 1600 x160
+m_2400: eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+m_2990: eligible=0 win=160 bitmap=0 blend=160 mosaic=160 dispcnt: 3e00 x160
+m_5340: eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+g_4599: eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160

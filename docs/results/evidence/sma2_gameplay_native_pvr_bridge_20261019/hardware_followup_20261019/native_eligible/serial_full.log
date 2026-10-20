@@ -1,0 +1,118 @@
+Connecting to 192.168.0.128...
+dc-load-ip 3.0.1 using Broadband Adapter (HIT-0400)
+Console enabled
+Upload </home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_gameplay_native_pvr_bridge_20261019/hardware_followup_20261019/native_eligible/SuperMarioWorldRecomp_native_eligible.elf>
+File format is ELF, start address is 0x8c010000
+Section .text, lma 0x8c010000, size 1520876
+Section .init, lma 0x8c184000, size 54
+Section .fini, lma 0x8c184038, size 42
+Section .rodata, lma 0x8c184064, size 173080
+Section .eh_frame, lma 0x8c1ae47c, size 116276
+Section .gcc_except_table, lma 0x8c1caab0, size 18577
+Section .ctors, lma 0x8c1cf3c4, size 48
+Section .dtors, lma 0x8c1cf3f4, size 8
+Section .data, lma 0x8c1cf3fc, size 8200
+Section .got, lma 0x8c1d1404, size 12
+Transferred 1837173 bytes at 2861734 bytes / sec
+Executing at 0x8c010000
+Sending execute command (0xac010000, console=1, cdfsredir=0)...argv(1, argv0="SuperMarioWorldRecomp_native_eligible.elf")...executing
+
+--
+KallistiOS v2.3.0 [dreamcast/pristine]
+  Git revision: 8e704086
+  Sun Oct 18 11:02:29 PM MST 2026
+  gpf@gpf-B550-Phantom-Gaming-4-ac:/opt/toolchains/dc/kos
+  sh-elf-gcc (GCC) 17.0.0 20260705 (experimental)
+maple: active drivers:
+    Dreameye (Camera): Camera
+    Sound Input Peripheral: Microphone
+    PuruPuru (Vibration) Pack: JumpPack
+    VMU Driver: Clock, LCD, MemoryCard
+    Mouse Driver: Mouse
+    Keyboard Driver: Keyboard
+    Controller Driver: Controller
+    Lightgun: LightGun
+vid_set_mode: 640x480 VGA with 1 framebuffers.
+dc-load console support enabled
+maple: attached devices:
+  A0: Dreamcast Controller           (01000000: Controller)
+  A1: Visual Memory                  (0e000000: Clock, LCD, MemoryCard)
+  B0: Dreamcast Controller           (01000000: Controller)
+  B1: Visual Memory                  (0e000000: Clock, LCD, MemoryCard)
+  C0: Dreamcast Mouse                (00020000: Mouse)
+  D0: Keyboard                       (40000000: Keyboard)
+
+[sma2] main entered
+[dreamcast-checkpoint] Y-button save enabled: /pc/sma2_checkpoint.bin
+[sma2] asset found: /pc/game.toml
+[sma2] asset found: /pc/gbarecomp/bios/gba_bios.bin
+[sma2] asset found: /pc/roms/super_mario_world_usa.gba
+[sma2] runtime entered
+[sma2] config parsed
+[sma2] resolving BIOS path: /pc/gbarecomp/bios/gba_bios.bin
+[asset] opening /pc/gbarecomp/bios/gba_bios.bin
+[asset] ftell 16384
+[sma2] BIOS path resolved
+[asset] opening /pc/roms/super_mario_world_usa.gba
+[asset] ftell 4194304
+[sma2] ROM path resolved
+[sma2] BIOS loaded
+[sma2] ROM loaded: 4194304 bytes
+[sma2] constructing GBA bus and PPU
+scanline_backend=HLE (tile-span native-color composition)
+cpu_backend=interpreter (GBARECOMP_FORCE_INTERP)
+save_config source=game-config type=EEPROM size=8192 (detected=EEPROM signature="EEPROM_V" @ 0x1779D0)
+self_heal_recompile=DISABLED (build default - pure Stage-1 interpreter bridge this session)
+vid_set_mode: 320x240 VGA with 1 framebuffers.
+mgba-dc: GBACoreCreate: entered
+mgba-dc: GBACoreCreate: gbacore=0x8c8f37a0 core(&gbacore->d)=0x8c8f37a0 sizeof(GBACore)=34080
+mgba-dc: layout PATH_MAX=1024 sizeof(mCore)=1720 init_offset=1432
+mgba-dc: GBACoreCreate: right after assignment, core->init=0x8c08ac04 _GBACoreInit=0x8c08ac04
+mgba-dc: GBACoreCreate: about to return, core=0x8c8f37a0 core->init=0x8c08ac04
+mgba-dc: _GBACoreInit: allocating cpu/gba
+mgba-dc: _GBACoreInit: cpu/gba allocated
+mgba-dc: _GBACoreInit: GBACreate
+mgba-dc: _GBACoreInit: GBACreate done, ARMSetComponents
+mgba-dc: _GBACoreInit: ARMSetComponents done, ARMInit
+mgba-dc: GBAInit: GBAMemoryInit
+mgba-dc: GBAInit: GBAMemoryInit done
+mgba-dc: GBAInit: GBASavedataInit
+mgba-dc: GBAInit: GBASavedataInit done
+mgba-dc: GBAInit: GBAVideoInit
+mgba-dc: GBAInit: GBAVideoInit done
+mgba-dc: GBAInit: GBAAudioInit
+mgba-dc: GBAInit: GBAAudioInit done
+mgba-dc: GBAInit: GBAIOInit
+mgba-dc: GBAInit: GBAIOInit done
+mgba-dc: GBAInit: GBASIOInit
+mgba-dc: GBAInit: GBASIOInit done
+mgba-dc: GBAInit: GBAHardwareInit
+mgba-dc: GBAInit: GBAHardwareInit done
+mgba-dc: GBAInit: GBAChecksum
+mgba-dc: GBAInit: GBAChecksum done
+mgba-dc: GBAInit: returning
+mgba-dc: _GBACoreInit: ARMInit done (this runs GBAInit via component->init)
+mgba-dc: _GBACoreInit: mRTCGenericSourceInit done, video renderer creates
+mgba-dc: _GBACoreInit: video renderer creates done
+mgba-dc: _GBACoreInit: mVideoThreadProxyCreate
+mgba-dc: _GBACoreInit: mVideoThreadProxyCreate done
+mgba-dc: _GBACoreInit: mDirectorySetInit
+mgba-dc: _GBACoreInit: mDirectorySetInit done
+mgba-dc: _GBACoreInit: returning true
+SMA2_NATIVE_PVR_RESEED frame=0 bytes=100352
+SMA2_NATIVE_PVR_INIT shadow=0x8c8f37a0 gba=0x8c8fbcc8 renderer=0x8c8f3f28 mode=validation shadow_cpu_steps=0
+[dreamcast-checkpoint] inactive RTC seeded for snapshot codec
+SMA2_NATIVE_PVR_RESEED frame=200 bytes=100352
+CHECKPOINT_OK restored frame=200
+[dreamcast-audio] KOS mono PCM stream started at 32768 Hz
+dreamcast_video=320x240 RGB565, centered GBA 240x160
+[gbarecomp:runtime] present-in-place ON (frame-boundary resume misses eliminated structurally; GBARECOMP_PRESENT_IN_PLACE=0 to disable)
+[dreamcast-input] maple_buttons=0x00000000 rtrig=0 keyinput=0x03ff
+SMA2_NATIVE_PVR_FRAME frame=1 guest_frame=200 rows=160 native=160 fallback=0 forced_reasons=win:0,bitmap:0,blend:0,bg_mosaic:0,obj_mosaic:0,backend:0,diagnostic_force:0 captured=160 displayed=160 fallback_rows=0 software_oracle=complete ppu_state_fnv=12f36c915005eac5 rgb888_fnv=e6b64e95140b714f rgb565_fnv=0d585ef913d00d74 sync_bytes=0 sync_writes=0 upload_us=8050 submit_us=782
+[sma2-perf] path=present-in-place elapsed_us=1941483 interval_us=1941483 guest_frame=201 delta_frames=1 fps=0.515 instructions=86541 ips=44574 cycles=280897 cps=144681 interp_dispatches=86541 guest_ms=1939 avg_guest_us_per_frame=1939124 render_ms=1 present_ms=0 vblank_wait_ms=0 video_convert_ms=0 audio_work_ms=0 audio_submit_ms=0 audio_generated=1096 audio_queued=1096 audio_consumed_delta=1096 audio_silence_delta=11192 input_ms=0 pacer_wait_ms=0 sync_ms=0 presents=1 pc=0x0800052e state=thumb keyinput=0x03ff
+SMA2_NATIVE_PVR_FRAME frame=2 guest_frame=201 rows=160 native=160 fallback=0 forced_reasons=win:0,bitmap:0,blend:0,bg_mosaic:0,obj_mosaic:0,backend:0,diagnostic_force:0 captured=160 displayed=160 fallback_rows=0 software_oracle=complete ppu_state_fnv=12f36c915005eac5 rgb888_fnv=e6b64e95140b714f rgb565_fnv=0d585ef913d00d74 sync_bytes=1056 sync_writes=520 upload_us=441 submit_us=778
+SMA2_NATIVE_PVR_CAPTURE_COUNTERS frame=201 rows=160 native=160 fallback=0 captured=160 displayed=160 fallback_rows=0 result=PASS
+SMA2_NATIVE_PVR_LINE_CLASS frame=201 0:native 1:native 2:native 3:native 4:native 5:native 6:native 7:native 8:native 9:native 10:native 11:native 12:native 13:native 14:native 15:native 16:native 17:native 18:native 19:native 20:native 21:native 22:native 23:native 24:native 25:native 26:native 27:native 28:native 29:native 30:native 31:native 32:native 33:native 34:native 35:native 36:native 37:native 38:native 39:native 40:native 41:native 42:native 43:native 44:native 45:native 46:native 47:native 48:native 49:native 50:native 51:native 52:native 53:native 54:native 55:native 56:native 57:native 58:native 59:native 60:native 61:native 62:native 63:native 64:native 65:native 66:native 67:native 68:native 69:native 70:native 71:native 72:native 73:native 74:native 75:native 76:native 77:native 78:native 79:native 80:native 81:native 82:native 83:native 84:native 85:native 86:native 87:native 88:native 89:native 90:native 91:native 92:native 93:native 94:native 95:native 96:native 97:native 98:native 99:native 100:native 101:native 102:native 103:native 104:native 105:native 106:native 107:native 108:native 109:native 110:native 111:native 112:native 113:native 114:native 115:native 116:native 117:native 118:native 119:native 120:native 121:native 122:native 123:native 124:native 125:native 126:native 127:native 128:native 129:native 130:native 131:native 132:native 133:native 134:native 135:native 136:native 137:native 138:native 139:native 140:native 141:native 142:native 143:native 144:native 145:native 146:native 147:native 148:native 149:native 150:native 151:native 152:native 153:native 154:native 155:native 156:native 157:native 158:native 159:native
+SMA2_NATIVE_PVR_CAPTURE frame=201 pixels=38400 mismatches=0 first_x=-1 first_y=-1 software_rgb888_fnv=e6b64e95140b714f software_rgb565_fnv=0d585ef913d00d74 pvr_rgb565_fnv=0d585ef913d00d74 state_fnv=12f36c915005eac5 rows=160 native=160 fallback=0 ready=0 render_done=0 vblank=1 front=0xa511f000 back=0xa591f000 front_after=0xa511f000 back_after=0xa591f000 stable=1 capture_us=37863 upload_us=441 submit_us=778 oracle=PASS
+SMA2_NATIVE_PVR_ACCEPTANCE result=PASS
+Program returned 0

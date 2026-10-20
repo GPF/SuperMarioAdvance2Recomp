@@ -1,0 +1,7 @@
+frame=201 native_rows=152 fallback_rows=8
+software_sha256=0ac1575875ad5bb2a4c95e82d949fcbea28f7e8c6e395b565811ff14929bcf6a
+pvr_sha256=7b27467f29a5f29d36f21c76fda497dadda5ff534e81fabea4109232d8fc1fa7
+raw_mismatches=36888/38400
+raw_first_x=0 first_y=0 expected=0x6dbf actual=0x659e
+ownership_model_mismatches=0/38400
+RESULT=PASS

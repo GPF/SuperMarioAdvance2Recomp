@@ -1,0 +1,28 @@
+FROZEN_IMAGE rom_off=0x9DCDC len=864 fnv=b0c7fce705c5d62c
+TRACE_FRAME ppu_frame=6999
+TRACE_START mode=interp pc=0800052e cpsr=6000003f vbl=7000 yielded=7000 cycles=1966235619 ob=00000138
+PVRCLS frame=0 rows_seen=160 eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+SNAP yield n=1 retired=84861 pc=0800052e cpsr=6000003f cyc=1966517148 pend=7 budget=20 vbl=7001 yv=7001 IE=2003 IF=0000 IME=0001 dev=618c29df34fc2246 iw=af0d84e16b8a99b3 ew=3b212d9f9fb35b41 ob=00000138 r: 0 1 3002b64 3003f98 0 0 0 0 3002b64 4000200 3002340 0 3004378 3007ddc 8037225 800052e
+PVRCLS frame=1 rows_seen=160 eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+SNAP yield n=2 retired=175367 pc=08000534 cpsr=6000003f cyc=1966813616 pend=21 budget=240 vbl=7002 yv=7002 IE=2003 IF=0000 IME=0001 dev=dd1618bb7517c589 iw=c9995cfdaef03e3a ew=3b212d9f9fb35b41 ob=00000138 r: 0 1 3002b64 3003f98 0 0 0 0 3002b64 4000200 3002340 0 3004378 3007ddc 8037225 8000534
+PVRCLS frame=2 rows_seen=160 eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+SNAP yield n=3 retired=262070 pc=0800052e cpsr=6000003f cyc=1967094883 pend=21 budget=6 vbl=7003 yv=7003 IE=2003 IF=0000 IME=0001 dev=36097034c1e128b7 iw=bd415685dacb47fb ew=3b212d9f9fb35b41 ob=00000138 r: 0 1 3002b64 3003f98 0 0 0 0 3002b64 4000200 3002340 0 3004378 3007ddc 8037225 800052e
+PVRCLS frame=3 rows_seen=160 eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+SNAP yield n=4 retired=347541 pc=08000532 cpsr=6000003f cyc=1967372662 pend=21 budget=522 vbl=7004 yv=7004 IE=2003 IF=0000 IME=0001 dev=64bfbfd73b9104b5 iw=a59c27431991f4c5 ew=11806106ac5444c1 ob=00000138 r: 0 1 3002b64 3003f98 0 0 0 0 3002b64 4000200 3002340 0 3004378 3007ddc 8037225 8000532
+PVRCLS frame=4 rows_seen=160 eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+SNAP yield n=5 retired=434130 pc=0800052e cpsr=6000003f cyc=1967654130 pend=21 budget=174 vbl=7005 yv=7005 IE=2003 IF=0000 IME=0001 dev=36f596f08f425d1d iw=c3b862dff81ba2aa ew=11806106ac5444c1 ob=00000138 r: 0 1 3002b64 3003f98 0 0 0 0 3002b64 4000200 3002340 0 3004378 3007ddc 8037225 800052e
+PVRCLS frame=5 rows_seen=160 eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+SNAP yield n=6 retired=520663 pc=08000532 cpsr=6000003f cyc=1967935058 pend=21 budget=142 vbl=7006 yv=7006 IE=2003 IF=0000 IME=0001 dev=1d062d120997fb01 iw=960a80f873bc639c ew=11806106ac5444c1 ob=00000138 r: 0 1 3002b64 3003f98 0 0 0 0 3002b64 4000200 3002340 0 3004378 3007ddc 8037225 8000532
+PVRCLS frame=6 rows_seen=160 eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+SNAP yield n=7 retired=605832 pc=08000530 cpsr=6000003f cyc=1968212904 pend=21 budget=88 vbl=7007 yv=7007 IE=2003 IF=0000 IME=0001 dev=fd5f7bf5031bc8c1 iw=4145b17e896273d2 ew=11806106ac5444c1 ob=00000138 r: 0 1 3002b64 3003f98 0 0 0 0 3002b64 4000200 3002340 0 3004378 3007ddc 8037225 8000530
+PVRCLS frame=7 rows_seen=160 eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+SNAP yield n=8 retired=688689 pc=0800052e cpsr=6000003f cyc=1968486383 pend=21 budget=17 vbl=7008 yv=7008 IE=2003 IF=0000 IME=0001 dev=6bf14db461285ab9 iw=6336d65bc93d5c94 ew=2a99e614a93080c1 ob=00000138 r: 0 1 3002b64 3003f98 0 0 0 0 3002b64 4000200 3002340 0 3004378 3007ddc 8037225 800052e
+PVRCLS frame=8 rows_seen=160 eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+SNAP yield n=9 retired=773138 pc=0800052e cpsr=6000003f cyc=1968766071 pend=21 budget=505 vbl=7009 yv=7009 IE=2003 IF=0000 IME=0001 dev=64f1670acd5b99c7 iw=263a656f1f3d0033 ew=2a99e614a93080c1 ob=00000138 r: 0 1 3002b64 3003f98 0 0 0 0 3002b64 4000200 3002340 0 3004378 3007ddc 8037225 800052e
+PVRCLS frame=9 rows_seen=160 eligible=0 win=160 bitmap=0 blend=160 mosaic=0 dispcnt: 3f00 x160
+SNAP yield n=10 retired=858864 pc=0800052e cpsr=6000003f cyc=1969049102 pend=21 budget=498 vbl=7010 yv=7010 IE=2003 IF=0000 IME=0001 dev=8f9321b4c38fc114 iw=3fb0be6f73e96907 ew=2a99e614a93080c1 ob=00000138 r: 0 1 3002b64 3003f98 0 0 0 0 3002b64 4000200 3002340 0 3004378 3007ddc 8037225 800052e
+LOOP_SECONDS 0.300842
+TRACE_END mode=interp retired=858864 steps=492195 pc=0800052e vbl=7010 yielded=7010 cycles=1969049102 ob=00000138 events=1117285
+ISLAND_PROBE wants(030015d8)=0 wants(030015f4)=0 wants(030016b8)=0 wants(08000000)=0
+ISLAND_STATE island=0 force_interp=1 static_entry_030015d8=0 hook=(nil) valid=0
+IWRAM_CODE_HASH_END b0c7fce705c5d62c frozen_match=1

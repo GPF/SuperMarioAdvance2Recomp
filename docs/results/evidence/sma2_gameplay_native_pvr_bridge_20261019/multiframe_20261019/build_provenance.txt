@@ -1,0 +1,18 @@
+KOS environment: /opt/toolchains/dc/kos/environ.sh
+SH-4 compiler: /opt/toolchains/dc/sh-elf/bin/sh-elf-gcc (17.0.0)
+Build directory: /tmp/sma2-pvr-multiframe-build
+Build command: tools/build_dreamcast.sh (target SuperMarioWorldRecomp)
+Configuration: SMA2_DREAMCAST=ON; SMA2_NATIVE_PVR_GBA_RENDER=ON; SMA2_NATIVE_PVR_SKIP_SOFTWARE=OFF; SMA2_NATIVE_PVR_FRONT_CAPTURE=ON; SMA2_NATIVE_PVR_CAPTURE_FRAMES=4; SMA2_NATIVE_PVR_FORCE_FALLBACK=OFF; SMA2_DEV_CHECKPOINT=ON; SMA2_DEV_CHECKPOINT_AUTOLOAD=ON; SMA2_PVR_PRESENT=OFF; SMA2_RGB565_SIDECAR=OFF; SMA2_CART_AOT=OFF; SMA2_SH4_DYNAREC=OFF.
+GBARecomp source revision: 5e89943528aee7bc1c399bdbd035364a4b41dd10 (pre-existing dirty worktree preserved).
+SMA2 bridge source SHA-256: 9b123c431767de6de697a80c268252853e2e35f338cec65bb1016cf81033754a
+SMA2 bridge header SHA-256: 62989de2ba920027c32878fe715ca7978c8798028c4feb48caa311f352379f7e
+SMA2 bridge contract header SHA-256: d50b82526cd5da385173b0abf47aead6970bbe282afe7694e50009f539197fca
+SMA2 bridge hook C/header SHA-256: a41ee1648af8d328a8ee9c77eadb851ed598a8a2e7dbc1314d4df7b95e2f7732 / d1d5e04fb4a1b4ef65b2b6321269e2fb3ce734d5377e43d4ea3badedb477c4cf
+SMA2 host window SHA-256: f6af356885cca179892ddf1576b14cebc1bbe7e8e5235c7a8e18763cf6591e12
+CMakeLists.txt SHA-256: 3495884877386e615bc1a4d4d5598a04d673152759f0cb9e79a53ae02c20ff0f
+Build wrapper SHA-256: 2f2fe2f43137ddd365dd44e45c143c5433624b662f7fad0020768a48ea4b2d85
+GBARecomp gba_ppu.cpp/header SHA-256: e323aeca3f964d887f0d86012e983cde74f9459a2bf120704f3fae69df37d310 / 7ddedd38ac27c5dbe82e465b4fe42d5b6ec8252bd10f760103c65323e0067ac7
+GBARecomp gba_bus.cpp/header SHA-256: ee944aa72983cc19d4bde2a3f8e44d4434a1609e36673fb2be11612885c46023 / f9aa69f777f48ff654d8ecf3bed5bc3cd1ca1023472947944a1d979a4e1b1ee4
+Pinned mGBADC renderer C/header SHA-256: 83fd6ab67147a80cda61704f9f1ff06d78cc24d6dbed0e0f932b54e58962f0ef / 445c044a1fc8933bcb49be61d6b35a2e3690c10bb22d93c83e7fb9c45c3db1bb
+Host bridge contract test: PASS (g++ -std=c++20; /tmp/sma2-native-pvr-bridge-contract-test)
+Cross-build: PASS; see /tmp/sma2-pvr-multiframe-build/build.log. ELF SHA-256 is in preflight.txt.

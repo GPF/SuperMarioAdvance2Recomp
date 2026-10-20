@@ -1,0 +1,2 @@
+FROZEN_IMAGE rom_off=0x9DCDC len=864 fnv=b0c7fce705c5d62c
+restore fail autoload CHECKPOINT_NOT_FOUND confirmed absent: /home/gpf/code/SuperMarioAdvance2Recomp/pc_frame200_checkpoint.gbas

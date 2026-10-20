@@ -1,0 +1,1 @@
+pc_frame200 frames=12 eligible_min=160 max=160 mean=160.0

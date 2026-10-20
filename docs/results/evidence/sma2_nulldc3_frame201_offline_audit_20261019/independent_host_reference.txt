@@ -1,0 +1,11 @@
+Source: docs/results/evidence/sma2_gameplay_native_pvr_bridge_20261019/frame201_host_oracle.log
+Checkpoint: frame 200, SHA-256 cf2f2a80376525b99943cf48c98b08da45e8c578b2e7bac02b535ab9b8d9f188
+Completed software frame: 201
+RGB888 FNV: e6b64e95140b714f
+RGB565 FNV: 0d585ef913d00d74
+State device FNV: c6bd6262af7a0083
+State CPU FNV: 70178d57e530541a
+State IRQ FNV: 97049efb37419ae3
+State clock FNV: a59eaefddbb30930
+Independent host probe source: docs/results/evidence/sma2_native_eligibility_probe_20261019/raw/pc_frame200.out
+Host probe first post-restore yield: vbl=201, pc=0800052e, cumulative cycles=56424161, 160 eligible rows. The probe and Dreamcast runtime use different cycle sample boundaries, so only PC and frame are directly comparable here.

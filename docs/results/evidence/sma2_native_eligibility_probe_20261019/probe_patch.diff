@@ -1,0 +1,20 @@
+35a36,50
+> #include "/home/gpf/code/SuperMarioAdvance2Recomp/src/dreamcast_native_pvr_bridge_contract.h"
+> static bool g_cls = false;
+> struct ClsObs : gba::GbaPpu::PresentationObserver {
+>     uint8_t reason[160]{}; unsigned seen = 0; uint64_t frames = 0; std::map<uint16_t,unsigned> dc;
+>     void scanline(const gba::GbaPpu&, uint32_t y, uint16_t dispcnt, const uint8_t* io, const uint8_t*, const uint8_t* oam, const uint8_t*) override {
+>         if (y >= 160) return; reason[y] = gbarecomp::sma2_pvr_bridge::classify_fallback(dispcnt, io, oam); ++seen; ++dc[dispcnt]; }
+>     void frame_ready() override {
+>         unsigned e = 0, w = 0, b = 0, bm = 0, ms = 0;
+>         for (unsigned y = 0; y < 160; ++y) { e += reason[y] == 0; w += (reason[y] & 1) != 0; bm += (reason[y] & 2) != 0; b += (reason[y] & 4) != 0; ms += (reason[y] & 0x18) != 0; }
+>         std::printf("PVRCLS frame=%llu rows_seen=%u eligible=%u win=%u bitmap=%u blend=%u mosaic=%u dispcnt:", (unsigned long long)frames++, seen, e, w, bm, b, ms);
+>         for (auto& kv : dc) std::printf(" %04x x%u", kv.first, kv.second);
+>         std::printf("\n"); seen = 0; dc.clear(); }
+>     void restored() noexcept override {}
+> };
+> static ClsObs g_clsobs;
+596a612
+>     if (g_cls) m.ppu.set_presentation_observer(&g_clsobs);
+832a849
+>         else if (a == "--pvr-classify") g_cls = true;

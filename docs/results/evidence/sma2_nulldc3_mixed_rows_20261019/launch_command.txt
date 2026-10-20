@@ -1,0 +1,9 @@
+/usr/bin/timeout 60 /home/gpf/code/nulldc3-dcload-pc/build/nulldc3 \
+  --portable /home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/portable \
+  --config config:Headless=yes , audio:backend=none , config:Debug.SerialConsoleEnabled=yes , \
+           config:Exit.AfterVblanks=24 , config:pvr.backend=refsw2 , \
+           config:Exit.FrameHash=yes , \
+           config:Dcload.PcRoot=/home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/pcroot , \
+           config:Dcload.PcWritable=yes \
+  /home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/mixed_rows.stripped.elf \
+  > /home/gpf/code/SuperMarioAdvance2Recomp/docs/results/evidence/sma2_nulldc3_mixed_rows_20261019/serial.log 2>&1

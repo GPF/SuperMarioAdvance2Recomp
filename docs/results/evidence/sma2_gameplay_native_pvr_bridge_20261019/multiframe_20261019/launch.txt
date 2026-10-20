@@ -1,0 +1,13 @@
+One launch only. Inputs were staged under /tmp/sma2-native-pvr-multiframe-hw-20261019 and mounted via dcload media redirection.
+
+Shell setup:
+  source /opt/toolchains/dc/kos/environ.sh
+  command -v sh-elf-gcc  # /opt/toolchains/dc/sh-elf/bin/sh-elf-gcc
+  sh-elf-gcc -dumpversion  # 17.0.0
+  verify UDP socket availability
+
+Preflight required: all hashes in preflight.txt; /tmp/mgbadc-dreamcast-console.lock absent; no kos-tool process.
+Launch command:
+  MGBA_DC_LOCK_TASK=sma2-pvr-multiframe-201-204 timeout --foreground 180 /home/gpf/code/dreamcast/mGBADC/tools/dc-load/kos-tool-locked.sh -t 192.168.0.128 -x <verified ELF> -m /tmp/sma2-native-pvr-multiframe-hw-20261019
+
+The executable exits after frame 204 passes. It exits nonzero on the first failed capture gate. No retry was issued.

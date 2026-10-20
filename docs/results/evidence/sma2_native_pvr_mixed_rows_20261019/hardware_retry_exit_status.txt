@@ -1,0 +1,5 @@
+kos_tool_exit_status=0
+application_exit_status=0
+fixture_acceptance=PASS
+lock_released=yes
+retry=none_after_success

@@ -57,3 +57,25 @@ ELF must be launched only through
 `/home/gpf/code/dreamcast/mGBADC/tools/dc-load/kos-tool-locked.sh` using a unique
 `MGBA_DC_LOCK_TASK`. No hardware configuration or sibling repository was
 modified for this port.
+
+## Native PVR pixel validation update — 2026-10-19
+
+The selected frame-201 native BG/OBJ path passed physical Dreamcast acceptance
+with 160 native rows, zero fallback, and zero raw mismatches across 38,400
+RGB565 pixels. The SMA2 mixed-row fixture passed with 152 native rows and 8
+software-fallback rows, also with zero raw mismatches. These results cover the
+selected scene and ownership boundary; they do not establish general renderer
+correctness or full CPU/device/IRQ/clock equivalence.
+
+nullDC3 independently matched frame 201 at 0/38,400 after applying a
+source-backed emulator color model selected from each row's logged ownership:
+RGB565 texture conversion on fallback rows and ARGB1555 palette conversion on
+native rows. The raw mismatch count is retained as a diagnostic. Never apply
+the nullDC3 model to Dreamcast hardware comparisons, and do not apply the
+fallback RGB565 model to native palette rows. The reusable fail-closed
+comparator is [`tools/compare_sma2_nulldc3_pvr.py`](../tools/compare_sma2_nulldc3_pvr.py).
+
+Full CPU/device/IRQ/clock fingerprint equivalence remains incomplete; pixel
+equivalence is not a substitute. The closure report and next checkpoint gate
+are in
+[`SMA2_NULLDC3_RENDERER_PIXEL_EQUIVALENCE_CLOSURE_20261019.md`](results/SMA2_NULLDC3_RENDERER_PIXEL_EQUIVALENCE_CLOSURE_20261019.md).
