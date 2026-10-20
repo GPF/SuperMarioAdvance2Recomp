@@ -154,6 +154,7 @@ nullDC3 run artifacts:
 - First attempt: `/tmp/sma2-dynarec-nulldc3-20261020-run3/`.
 - Fail-fast attempt: `/tmp/sma2-dynarec-nulldc3-20261020-run4/`.
 - Emulator executable SHA-256: `f071573357a70b60d2e6ba6120fe83c475e45833c2a8970a8256382cab978b75`.
+- nullDC3 source checkout: `78d44f277a774ca11f672a926b3eaf387ebc1445` (only an unrelated untracked note was present).
 - BIOS SHA-256: `fd2547724b505f487e6dcb29ec2ecff3af35a841a77ab2e85fd87350abd36570`.
 - ROM SHA-256: `63d9fff04c635990a5c205a99ea64bfa698aa5cb9ec1333360063bbee949a4f3`.
 
