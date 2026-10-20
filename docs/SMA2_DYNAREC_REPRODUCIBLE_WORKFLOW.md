@@ -89,9 +89,30 @@ B=$PWD/../build-dynarec; mkdir -p $B-empty-generated
 SMA2_DC_BUILD_DIR=$B SMA2_GENERATED_DIR=$B-empty-generated SMA2_SH4_DYNAREC=ON JOBS=8 tools/build_dreamcast.sh
 sh-elf-strip --strip-debug -o $B/SuperMarioWorldRecomp.stripped.elf $B/SuperMarioWorldRecomp.elf
 sha256sum $B/SuperMarioWorldRecomp.stripped.elf   # 347126a2c669c7e2f15d718429d0ed006cb323c1c2f75237b2ad071fa67588f5
-# run once (assets: see the nullDC3 command above); on a loaded machine add:
-#   --timeout-seconds 300 --post-summary-grace-seconds 240
 ```
+Run the bounded diagnostic once (new, unused `--run-dir`); this is the loaded-host form:
+```
+python3 tools/run_nulldc3_dynarec_diagnostic.py \
+  --emulator /home/gpf/code/nulldc3-dcload-pc/build/nulldc3 \
+  --elf $B/SuperMarioWorldRecomp.stripped.elf \
+  --elf-sha256 347126a2c669c7e2f15d718429d0ed006cb323c1c2f75237b2ad071fa67588f5 \
+  --game-toml game.toml \
+  --bios <gba_bios.bin> --bios-sha256 fd2547724b505f487e6dcb29ec2ecff3af35a841a77ab2e85fd87350abd36570 \
+  --rom <super_mario_world_usa.gba> --rom-sha256 63d9fff04c635990a5c205a99ea64bfa698aa5cb9ec1333360063bbee949a4f3 \
+  --run-dir <NEW dir> --timeout-seconds 300 --post-summary-grace-seconds 240
+```
+`--post-summary-grace-seconds` defaults to 10 (unchanged behavior).
+
+**Three different things; never conflate them**
+1. *Guest diagnostic PASS*: the guest printed its summary and each of stage1/2/3/D/E is `PASS`
+   with `blocks>0`, `fallback=0`, `mismatches=0` (this is what proves the dynarec ran).
+2. *Emulator exit status*: must be 0, i.e. nullDC3 exited by itself (`Exit.AfterSeconds`).
+   Status 0 with no guest summary is still FAIL.
+3. *Runner timeout/termination*: if nullDC3 has not exited within the grace period the runner
+   terminates it (status -15) and the verdict is FAIL even though (1) holds. This happens on a
+   loaded host; rerun with the longer grace rather than treating it as a guest failure, and
+   record the FAIL run.
+The final runner verdict is PASS only when (1) and (2) both hold and (3) did not occur.
 `build_dreamcast.sh` defaults to `./gbarecomp` and refuses a different GBARecomp/arm-recomp-core
 revision or tracked modifications. The bundle-based fallback in `tools/gbarecomp_pin.env` is
 retained until this workflow has been used for a while.
