@@ -1,0 +1,5 @@
+/opt/toolchains/dc/sh-elf/bin/sh-elf-gcc
+/opt/toolchains/dc/bin/kos-tool
+2026-10-20T17:28:42Z
+wrapper-rc=0
+2026-10-20T17:28:55Z
