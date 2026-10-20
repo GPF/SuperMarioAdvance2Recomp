@@ -1,5 +1,4 @@
 roms/
-/gbarecomp
 *.gba
 *.GBA
 generated/*.c

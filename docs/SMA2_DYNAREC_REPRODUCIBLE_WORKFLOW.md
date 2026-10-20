@@ -72,3 +72,23 @@ zero fallback. Evidence: `docs/results/evidence/sma2_dynarec_reproducible_202610
 Source archive of the pre-recovery dirty tree:
 `/home/gpf/code/backups/sma2-dynarec-minimal-src-20261020.tar.gz`
 (SHA-256 `0996ddc01dfd0ce45f2e9067b1dc47c1c475edf10d81cb5d3e9bfe6eccfe80ab`).
+
+## Migration to the nested submodule (branch `migration/gbarecomp-submodule-20261020`)
+**Prepared, NOT validated: the required commits are not published.** Changes: `.gitmodules`
+points `gbarecomp` at `https://github.com/GPF/gbarecomp.git`; the gitlink is
+`2d2a8fe94500ac64b9ac8f1b4250a1cfaa1546cf`; `build_dreamcast.sh` defaults to `./gbarecomp`
+and keeps the revision/dirty checks against `tools/gbarecomp_pin.env`; `/gbarecomp` was removed
+from `.gitignore`; the bundle workflow remains as a fallback (`GBARECOMP_FALLBACK_ROOT`).
+Populate with:
+```
+git submodule update --init gbarecomp
+git -C gbarecomp config submodule.external/arm-recomp-core.url https://github.com/mstan/arm-recomp-core.git
+git -C gbarecomp submodule update --init external/arm-recomp-core   # -> 61cdc51a
+```
+(Avoid `--recursive`: GBARecomp also lists rbengine, recomp-net and Android SDL, which this
+build does not use.) The `config` line is a per-clone workaround: GBARecomp's `.gitmodules`
+uses `../arm-recomp-core.git`, which resolves to the nonexistent `GPF/arm-recomp-core.git`.
+Publishing actions required before validation (remote state checked 2026-10-20 with `git ls-remote`):
+1. `GPF/gbarecomp`: push `recovery/sma2-validated-deps-20261020` (`2d2a8fe`; `GPF/gbarecomp` `main` is only `c448b8a`, so `bdaefa2` is also missing).
+2. arm-recomp-core: `61cdc51a` is already `mstan/arm-recomp-core` `master`. Either create `GPF/arm-recomp-core` (fork) or change GBARecomp's `.gitmodules` to an absolute URL, which means a new GBARecomp commit and a re-pin; otherwise keep the per-clone `config` workaround.
+3. `GPF/SuperMarioAdvance2Recomp`: push `recovery/sma2-dynarec-reproducible-20261020` and this migration branch (`main` is `71f360f`; neither is there).

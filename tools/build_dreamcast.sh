@@ -3,7 +3,7 @@ set -eo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${repo_root}/tools/gbarecomp_pin.env"
-gbarecomp_root="${GBARECOMP_ROOT:-${GBARECOMP_PIN_DEFAULT_ROOT}}"
+gbarecomp_root="${GBARECOMP_ROOT:-${repo_root}/gbarecomp}"
 build_dir="${SMA2_DC_BUILD_DIR:-${repo_root}/build-dreamcast}"
 tomlpp_include="${GBARECOMP_TOMLPP_INCLUDE_DIR:-/usr/include/toml++}"
 generated_dir="${SMA2_GENERATED_DIR:-${repo_root}/generated}"
@@ -11,7 +11,12 @@ require_generated_dispatch="${SMA2_REQUIRE_GENERATED_DISPATCH:-${SMA2_CART_AOT:-
 
 if [[ ! -f "${gbarecomp_root}/CMakeLists.txt" ]]; then
     echo "GBARecomp checkout not found: ${gbarecomp_root}" >&2
-    echo "Set GBARECOMP_ROOT to an existing local checkout; this script does not initialize submodules." >&2
+    echo "Populate the canonical dependency: git submodule update --init gbarecomp &&" >&2
+    echo "  git -C gbarecomp config submodule.external/arm-recomp-core.url https://github.com/mstan/arm-recomp-core.git &&" >&2
+    echo "  git -C gbarecomp submodule update --init external/arm-recomp-core" >&2
+    echo "(the config line is needed while GPF/arm-recomp-core.git does not exist)" >&2
+    echo "(this script does not initialize submodules). Fallback: tools/setup_gbarecomp_pinned.sh then" >&2
+    echo "GBARECOMP_ROOT=\$GBARECOMP_FALLBACK_ROOT (see tools/gbarecomp_pin.env)." >&2
     exit 2
 fi
 # Refuse an unpinned or dirty GBARecomp so the build is reproducible. Override only
@@ -22,7 +27,7 @@ if [[ "${SMA2_ALLOW_UNPINNED_GBARECOMP:-0}" != "1" ]]; then
     if [[ "${actual_rev}" != "${GBARECOMP_PIN_COMMIT}" || "${core_rev}" != "${ARM_RECOMP_CORE_PIN_COMMIT}" ]]; then
         echo "GBARecomp at ${gbarecomp_root} is ${actual_rev:-unknown}/${core_rev:-unknown}," >&2
         echo "expected ${GBARECOMP_PIN_COMMIT}/${ARM_RECOMP_CORE_PIN_COMMIT}." >&2
-        echo "Run tools/setup_gbarecomp_pinned.sh, or set GBARECOMP_ROOT." >&2
+        echo "Update the submodule to the superproject gitlink, or use the fallback in tools/gbarecomp_pin.env." >&2
         exit 2
     fi
     if [[ -n "$(git -C "${gbarecomp_root}" status --porcelain --untracked-files=no)" ]]; then

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Create (or verify) a clean checkout of the pinned GBARecomp commit. Reads only
+# FALLBACK: create a clean checkout of the pinned GBARecomp commit. Reads only
 # committed objects from SOURCE, so a dirty working tree there is never copied.
 #   tools/setup_gbarecomp_pinned.sh [DEST] [SOURCE]
 # SOURCE defaults to the preserved bundle; a repo path or URL also works.
 set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${repo_root}/tools/gbarecomp_pin.env"
-dest="${1:-${GBARECOMP_PIN_DEFAULT_ROOT}}"
+dest="${1:-${GBARECOMP_FALLBACK_ROOT}}"
 src="${2:-${GBARECOMP_PIN_BUNDLE}}"
 core_src="${ARM_RECOMP_CORE_SOURCE:-${ARM_RECOMP_CORE_PIN_BUNDLE}}"
 if [[ -e "${dest}" ]]; then
