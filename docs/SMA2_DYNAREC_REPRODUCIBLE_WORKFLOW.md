@@ -73,22 +73,40 @@ Source archive of the pre-recovery dirty tree:
 `/home/gpf/code/backups/sma2-dynarec-minimal-src-20261020.tar.gz`
 (SHA-256 `0996ddc01dfd0ce45f2e9067b1dc47c1c475edf10d81cb5d3e9bfe6eccfe80ab`).
 
-## Migration to the nested submodule (branch `migration/gbarecomp-submodule-20261020`)
-**Prepared, NOT validated: the required commits are not published.** Changes: `.gitmodules`
-points `gbarecomp` at `https://github.com/GPF/gbarecomp.git`; the gitlink is
-`2d2a8fe94500ac64b9ac8f1b4250a1cfaa1546cf`; `build_dreamcast.sh` defaults to `./gbarecomp`
-and keeps the revision/dirty checks against `tools/gbarecomp_pin.env`; `/gbarecomp` was removed
-from `.gitignore`; the bundle workflow remains as a fallback (`GBARECOMP_FALLBACK_ROOT`).
-Populate with:
+## Canonical workflow: nested submodule (validated 2026-10-20)
+Published branch: `GPF/SuperMarioAdvance2Recomp` `migration/gbarecomp-submodule-20261020`
+(`31b2cf9`). `.gitmodules`: `gbarecomp` -> `https://github.com/GPF/gbarecomp.git`, gitlink
+`2d2a8fe94500ac64b9ac8f1b4250a1cfaa1546cf`; its `external/arm-recomp-core` resolves through
+`../arm-recomp-core.git` to the fork `https://github.com/GPF/arm-recomp-core.git` @
+`61cdc51a85efe621841458d9e6c35c5357fcb2ee`. No URL workaround is needed. Initialize only
+these two submodules (not `--recursive`: rbengine, recomp-net, Android SDL, recomp-ui are unused here).
 ```
+git clone -b migration/gbarecomp-submodule-20261020 https://github.com/GPF/SuperMarioAdvance2Recomp.git sma2
+cd sma2
 git submodule update --init gbarecomp
-git -C gbarecomp config submodule.external/arm-recomp-core.url https://github.com/mstan/arm-recomp-core.git
-git -C gbarecomp submodule update --init external/arm-recomp-core   # -> 61cdc51a
+git -C gbarecomp submodule update --init external/arm-recomp-core
+B=$PWD/../build-dynarec; mkdir -p $B-empty-generated
+SMA2_DC_BUILD_DIR=$B SMA2_GENERATED_DIR=$B-empty-generated SMA2_SH4_DYNAREC=ON JOBS=8 tools/build_dreamcast.sh
+sh-elf-strip --strip-debug -o $B/SuperMarioWorldRecomp.stripped.elf $B/SuperMarioWorldRecomp.elf
+sha256sum $B/SuperMarioWorldRecomp.stripped.elf   # 347126a2c669c7e2f15d718429d0ed006cb323c1c2f75237b2ad071fa67588f5
+# run once (assets: see the nullDC3 command above); on a loaded machine add:
+#   --timeout-seconds 300 --post-summary-grace-seconds 240
 ```
-(Avoid `--recursive`: GBARecomp also lists rbengine, recomp-net and Android SDL, which this
-build does not use.) The `config` line is a per-clone workaround: GBARecomp's `.gitmodules`
-uses `../arm-recomp-core.git`, which resolves to the nonexistent `GPF/arm-recomp-core.git`.
-Publishing actions required before validation (remote state checked 2026-10-20 with `git ls-remote`):
-1. `GPF/gbarecomp`: push `recovery/sma2-validated-deps-20261020` (`2d2a8fe`; `GPF/gbarecomp` `main` is only `c448b8a`, so `bdaefa2` is also missing).
-2. arm-recomp-core: `61cdc51a` is already `mstan/arm-recomp-core` `master`. Either create `GPF/arm-recomp-core` (fork) or change GBARecomp's `.gitmodules` to an absolute URL, which means a new GBARecomp commit and a re-pin; otherwise keep the per-clone `config` workaround.
-3. `GPF/SuperMarioAdvance2Recomp`: push `recovery/sma2-dynarec-reproducible-20261020` and this migration branch (`main` is `71f360f`; neither is there).
+`build_dreamcast.sh` defaults to `./gbarecomp` and refuses a different GBARecomp/arm-recomp-core
+revision or tracked modifications. The bundle-based fallback in `tools/gbarecomp_pin.env` is
+retained until this workflow has been used for a while.
+
+### Measured fresh-clone validation (evidence: `docs/results/evidence/sma2_fresh_clone_validation_20261020/`)
+- Fresh HTTPS clone of the published branch; submodules at 2d2a8fe / 61cdc51a; clean tree.
+- Build from committed sources: rc 0, stripped ELF `347126a2…588f5` (identical), no `PT_TLS`.
+- Incremental: rerun (87 s) and after `touch src/main.cpp` (86 s, main.cpp rebuilt): same hash.
+- nullDC3 run1 and run2: all five stages PASS (1 native block, 0 fallback, 0 mismatches) and
+  the summary was seen, but the **runner verdict was FAIL** (emulator status -15). Cause: the
+  machine was loaded (load avg ~11, unrelated processes), so nullDC3 needed more than the
+  runner's fixed 10 s post-summary grace to exit by itself and the runner terminated it.
+  Recorded as FAIL; not a guest defect.
+- Run3 with `--post-summary-grace-seconds 240` (new option; default stays 10): emulator
+  exited by itself, status 0 (wall 28 s), verdict **PASS**, same five stages PASS.
+- After the summary the console shows a `Looks like null pointer read ... PC: 0x00000002` and
+  a REIOS reboot. This appears in every run including the earlier PASS runs; it follows guest
+  exit and is not a startup fault. The runner only treats the marker as fatal before the summary.
