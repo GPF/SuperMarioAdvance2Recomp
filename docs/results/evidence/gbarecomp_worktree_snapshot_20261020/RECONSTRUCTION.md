@@ -38,3 +38,33 @@ working tree (`src/main.cpp`, `CMakeLists.txt`, etc.). (3) `tests/dma/bulk_test_
 has trailing whitespace (`git diff --check` flags 2 lines), kept for fidelity.
 (4) nullDC3 and the mGBADC copy (`/tmp/sma2-bg0-mgbadc-source`) are still outside
 preservation records. (5) The recovery commit is unreviewed by upstream and not pushed.
+
+## Preservation in the original repository (2026-10-20)
+
+- Branch `recovery/sma2-validated-deps-20261020` created in `/home/gpf/code/gbarecomp`
+  at commit `2d2a8fe94500ac64b9ac8f1b4250a1cfaa1546cf` (parent `bdaefa236f5cd344a895f2ab692cae23f0d48ef2`)
+  by a non-forced fetch from the isolated checkout. It was absent beforehand; the
+  original HEAD (`main` @ `bdaefa2`), index, status and stash list are unchanged.
+- Bundle: `/home/gpf/code/backups/gbarecomp-recovery-sma2-validated-deps-20261020.bundle`,
+  SHA-256 `eb260f014e9a048cf2cfebb8954cbe88028f6afe342d9f3416eb907f48d58a4f`.
+  `git bundle verify` reports complete history; a clone of the bundle contains the
+  recovery commit. The bundle holds only the superproject: the `external/arm-recomp-core`
+  submodule @ `61cdc51a` is a gitlink and is NOT in it.
+
+## SMA2 uncommitted-dependency assessment (measured)
+
+Committed SMA2 `HEAD` (`git archive`) does **not** build the accepted dynarec ELF:
+`prepare_dreamcast_framework.py` fails "expected one patch site ... gba_ppu.cpp".
+A tree of `HEAD` plus only the following working-tree files built an ELF whose
+stripped SHA-256 is `347126a2…588f5` (identical to the accepted run):
+
+- modified tracked: `CMakeLists.txt`, `src/main.cpp`, `src/dreamcast_host_window.inc`,
+  `tools/build_dreamcast.sh`, `tools/prepare_dreamcast_framework.py`
+- untracked, required: `src/sh4jit/` (SH-4 backend), `vendor/mgba-sh4-jit/` (740 KB
+  vendored mGBA JIT; provenance script `tools/vendor_mgba_sh4_jit.sh`, source is the
+  sibling repo `brucemGBA`), and the top-level untracked `src/*.cpp|h` referenced by
+  CMake (native PVR bridge, presenter, IWRAM AOT, diag, gap-pad files)
+- not needed for this build: `.gitignore`, docs, `NEXT_TASK.md`, `tools/research`
+  (53 MB), `src/snapshots/`, other `tools/` tests and the 246 untracked docs.
+Not pruned file by file (no bisection), so some listed untracked `src` files may be
+unused by this configuration.
