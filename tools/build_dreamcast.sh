@@ -2,7 +2,8 @@
 set -eo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-gbarecomp_root="${GBARECOMP_ROOT:-/home/gpf/code/gbarecomp}"
+source "${repo_root}/tools/gbarecomp_pin.env"
+gbarecomp_root="${GBARECOMP_ROOT:-${GBARECOMP_PIN_DEFAULT_ROOT}}"
 build_dir="${SMA2_DC_BUILD_DIR:-${repo_root}/build-dreamcast}"
 tomlpp_include="${GBARECOMP_TOMLPP_INCLUDE_DIR:-/usr/include/toml++}"
 generated_dir="${SMA2_GENERATED_DIR:-${repo_root}/generated}"
@@ -12,6 +13,22 @@ if [[ ! -f "${gbarecomp_root}/CMakeLists.txt" ]]; then
     echo "GBARecomp checkout not found: ${gbarecomp_root}" >&2
     echo "Set GBARECOMP_ROOT to an existing local checkout; this script does not initialize submodules." >&2
     exit 2
+fi
+# Refuse an unpinned or dirty GBARecomp so the build is reproducible. Override only
+# for experiments: SMA2_ALLOW_UNPINNED_GBARECOMP=1 (the result is then not a recovery build).
+if [[ "${SMA2_ALLOW_UNPINNED_GBARECOMP:-0}" != "1" ]]; then
+    actual_rev="$(git -C "${gbarecomp_root}" rev-parse HEAD 2>/dev/null || true)"
+    core_rev="$(git -C "${gbarecomp_root}/external/arm-recomp-core" rev-parse HEAD 2>/dev/null || true)"
+    if [[ "${actual_rev}" != "${GBARECOMP_PIN_COMMIT}" || "${core_rev}" != "${ARM_RECOMP_CORE_PIN_COMMIT}" ]]; then
+        echo "GBARecomp at ${gbarecomp_root} is ${actual_rev:-unknown}/${core_rev:-unknown}," >&2
+        echo "expected ${GBARECOMP_PIN_COMMIT}/${ARM_RECOMP_CORE_PIN_COMMIT}." >&2
+        echo "Run tools/setup_gbarecomp_pinned.sh, or set GBARECOMP_ROOT." >&2
+        exit 2
+    fi
+    if [[ -n "$(git -C "${gbarecomp_root}" status --porcelain --untracked-files=no)" ]]; then
+        echo "GBARecomp checkout ${gbarecomp_root} has tracked modifications" >&2
+        exit 2
+    fi
 fi
 if [[ ! -f "${tomlpp_include}/toml.hpp" ]]; then
     echo "toml++ single-header include not found: ${tomlpp_include}/toml.hpp" >&2
