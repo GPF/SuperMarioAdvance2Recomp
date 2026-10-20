@@ -50,6 +50,16 @@ static int run_sma2(int argc, char** argv) {
     }
 
     gbarecomp::RunOptions opts;
+#if defined(SMA2_CART_AOT_DIAG)
+    // Upstream interactive replay capture allocates its 32 MiB writer ring
+    // before the first guest step. Keep the pre-replay startup behavior for
+    // this bounded hardware diagnostic; normal builds retain the default.
+    opts.diagnostic_replay_default = false;
+#endif
+#if defined(SMA2_SH4_DYNAREC)
+    // The bounded SH-4 dynarec differential is diagnostic-only as well.
+    opts.diagnostic_replay_default = false;
+#endif
     opts.builtin_game_name = "Super Mario Advance 2: Super Mario World";
     opts.builtin_rom_sha1 = "5101ddf223d1d918928fe1f306b63a42ada14a5e";
     opts.builtin_rom_crc32 = 0x5206880Au;

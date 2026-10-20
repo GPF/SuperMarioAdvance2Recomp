@@ -94,6 +94,17 @@ def main() -> int:
         "    static constexpr uint32_t kMaxExtraY = 0;",
     )
     runtime_cpp = dest / "src/runtime/runtime.cpp"
+    replace_once(
+        runtime_cpp,
+        '        if (const char* e = std::getenv("GBARECOMP_DIAGNOSTICS"); e && *e)\n'
+        "            want = e[0] != '0';\n",
+        '        if (const char* e = std::getenv("GBARECOMP_DIAGNOSTICS"); e && *e)\n'
+        "            want = e[0] != '0';\n"
+        "#if defined(SMA2_CART_AOT_DIAG) || defined(SMA2_SH4_DYNAREC)\n"
+        "        // Bounded diagnostics stay replay-free even when launch overrides ask for capture.\n"
+        "        want = false;\n"
+        "#endif\n",
+    )
     # Keep the interpreter as the only cart execution path and report enough
     # live state to distinguish a guest stall from slow emulation or missed input.
     replace_once(
