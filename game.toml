@@ -23,7 +23,6 @@ md5 = "2f660377581b7e48c06131f56c791b72"
 [bios]
 path = "gbarecomp/bios/gba_bios.bin"
 sha1 = "300c20df6731a33952ded8c436f7f186d25d3492"
-hle = true
 
 [rom]
 path = "roms/super_mario_world_usa.gba"
