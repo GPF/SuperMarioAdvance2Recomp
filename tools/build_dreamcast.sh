@@ -143,7 +143,9 @@ fi
 overlay="${build_dir}/gbarecomp-overlay"
 mkdir -p "${build_dir}"
 
-if [[ "${SMA2_CART_AOT:-OFF}" == "ON" ]]; then
+# SMA2_CART_AOT_REUSE_GENERATED=ON links the existing SMA2_GENERATED_DIR corpus verbatim
+# (no gba_recompile run), as required to reproduce the accepted 343-entry corpus.
+if [[ "${SMA2_CART_AOT:-OFF}" == "ON" && "${SMA2_CART_AOT_REUSE_GENERATED:-OFF}" != "ON" ]]; then
     rom_path="${SMA2_CART_AOT_ROM:-${repo_root}/roms/Super Mario Advance 2 - Super Mario World (USA).gba}"
     config_path="${SMA2_CART_AOT_CONFIG:-${repo_root}/tools/sma2_minimal_dispatch.toml}"
     host_build_dir="${SMA2_CART_AOT_HOST_BUILD_DIR:-${build_dir}-cart-host}"
@@ -258,6 +260,7 @@ kos-cmake -S "${repo_root}" -B "${build_dir}" \
     -DSMA2_LOW_PMU="${SMA2_LOW_PMU:-OFF}" \
     -DSMA2_B16_GAP="${SMA2_B16_GAP:-OFF}" \
     -DSMA2_CART_AOT_DIAG="${SMA2_CART_AOT_DIAG:-OFF}" \
+    -DSMA2_CART_AOT_DIAG_ISOLATED_ONLY="${SMA2_CART_AOT_DIAG_ISOLATED_ONLY:-OFF}" \
     -DSMA2_CART_AOT_IRQ_DIAG="${SMA2_CART_AOT_IRQ_DIAG:-OFF}" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS="-include ${repo_root}/tools/kos/glibcxx_c99_shim.h ${SMA2_EXTRA_CXX_FLAGS:-}"
