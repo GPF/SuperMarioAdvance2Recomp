@@ -1,0 +1,331 @@
+Personality: 00000000
+Updated personality: 00000000
+Linux paging: 4096 00001000 00000FFF
+Virtual cfg config:Headless=yes
+Virtual cfg audio:backend=none
+Virtual cfg config:Debug.SerialConsoleEnabled=yes
+Virtual cfg config:Exit.OnGuestExit=yes
+Virtual cfg config:Exit.AfterSeconds=120
+Virtual cfg config:Dynarec.Enabled=0
+Virtual cfg config:pvr.backend=refsw2
+Virtual cfg config:Dcload.PcRoot=/home/gpf/code/recovery/nulldc3-run1-20261020/pcroot
+Virtual cfg config:Dcload.PcWritable=yes
+Using '/home/gpf/code/recovery/build-dynarec-20261020/SuperMarioWorldRecomp.stripped.elf' as reios bin/elf file
+
+Config dir is: /home/gpf/code/recovery/nulldc3-run1-20261020/portable/
+Data dir is:   /home/gpf/code/recovery/nulldc3-run1-20261020/portable/
+Warning: Unable to open the config file '/home/gpf/code/recovery/nulldc3-run1-20261020/portable/emu.cfg' for reading (No such file or directory)
+Creating new empty config file at '/home/gpf/code/recovery/nulldc3-run1-20261020/portable/emu.cfg'
+WARNING: Audio backend set to "none"!
+WARNING: Running without audio!
+Info: nvmem is enabled, with addr space of size 512MB
+Info: p_sh4rcb: 0x7dda13200000 virt_ram_base: 0x7dda1b300000
+Unable to open VMU save file "/home/gpf/code/recovery/nulldc3-run1-20261020/portable/vmu_save_A1.bin", creating new file
+Initialising empty VMU...
+Unable to open VMU save file "/home/gpf/code/recovery/nulldc3-run1-20261020/portable/vmu_save_A2.bin", creating new file
+Initialising empty VMU...
+No nvmem loaded
+reios: Init
+Did not load bios, using reios
+RendIF: renderer: refsw2
+RendIF: Using renderer: refsw2
+Sh4 Reset
+Using MCPU Interpreter
+Using SCPU Interpreter
+Using DSP Interpreter
+-----------------
+REIOS: Booting up
+-----------------
+[dcload] /pc provided: root=/home/gpf/code/recovery/nulldc3-run1-20261020/pcroot writable=yes magic@8C004004 vector@8C004008 trap@8C004010
+
+--
+KallistiOS v2.3.0 [dreamcast/pristine]
+  Git revision: 8e704086
+  Mon Oct 19 06:28:50 PM MST 2026
+  gpf@gpf-B550-Phantom-Gaming-4-ac:/opt/toolchains/dc/kos
+  sh-elf-gcc (GCC) 17.0.0 20260705 (experimental)
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0D1E08 PR: 0x8C0D1DFC: Out of range on register index 1f000084
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0D1E18 PR: 0x8C0D1DFC: Out of range on register index 1f000084
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0D1E1C PR: 0x8C0D1DFC: Out of range on register index 1f000084
+VREG = 00 ARMRST 01
+VREG = 00 ARMRST 00
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/holly/sb.cpp:Read:640 PC: 0x8C0DA01E PR: 0x8C0DA01A: sb_ReadMem write-only reg 005f74ec 4
+
+
+GDROM:	HLE GDROM_INIT
+GDROM:	CMD INIT CC:18 PRM:0
+maple: active drivers:
+    Dreameye (Camera): Camera
+    Sound Input Peripheral: Microphone
+    PuruPuru (Vibration) Pack: JumpPack
+    VMU Driver: Clock, LCD, MemoryCard
+    Mouse Driver: Mouse
+    Keyboard Driver: Keyboard
+    Controller Driver: Controller
+    Lightgun: LightGun
+vid_set_mode: 640x480IL NTSC with 1 framebuffers.
+VREG = 03 ARMRST 00
+dc-load console support enabled
+**WARNING** Too fast Maple DMA: 0 5 9.522 1002009
+maple: attached devices:
+  A0: Dreamcast Controller           (01000000: Controller)
+  A1: Visual Memory                  (0e000000: Clock, LCD, MemoryCard)
+  A2: Visual Memory                  (0e000000: Clock, LCD, MemoryCard)
+
+[sma2] main entered
+[sma2] asset found: /pc/game.toml
+[sma2] asset found: /pc/gbarecomp/bios/gba_bios.bin
+[sma2] asset found: /pc/roms/super_mario_world_usa.gba
+[sma2] runtime entered
+[sma2] config parsed
+[sma2] resolving BIOS path: /pc/gbarecomp/bios/gba_bios.bin
+[asset] opening /pc/gbarecomp/bios/gba_bios.bin
+[asset] ftell 16384
+[sma2] BIOS path resolved
+[asset] opening /pc/roms/super_mario_world_usa.gba
+[asset] ftell 4194304
+[sma2] ROM path resolved
+[sma2] BIOS loaded
+[sma2] ROM loaded: 4194304 bytes
+[sma2] constructing GBA bus and PPU
+scanline_backend=HLE (tile-span native-color composition)
+hd_sampler_backend=HLE (cached indexed affine surface)
+sma2_cpu_backend=sh4-dynarec (pending bus init)
+cpu_backend=interpreter (GBARECOMP_FORCE_INTERP)
+scanline_backend=HLE (tile-span native-color composition)
+save_config source=game-config type=EEPROM size=8192 (detected=EEPROM signature="EEPROM_V" @ 0x1779D0)
+self_heal_recompile=DISABLED (build default - pure Stage-1 interpreter bridge this session)
+vid_set_mode: 320x240 NTSC with 1 framebuffers.
+VREG = 03 ARMRST 00
+VREG = 03 ARMRST 01
+VREG = 03 ARMRST 00
+[dreamcast-audio] KOS mono PCM stream started at 32768 Hz
+dreamcast_video=320x240 RGB565, centered GBA 240x160
+[gbarecomp:runtime] present-in-place ON (frame-boundary resume misses eliminated structurally; GBARECOMP_PRESENT_IN_PLACE=0 to disable)
+[dreamcast-input] maple_buttons=0x00000000 rtrig=0 keyinput=0x03ff
+[sma2-jit] active bus found; initializing backend
+[sma2-jit] backend init succeeded
+[sma2-jit] entering first driver burst pc=08000000
+[sma2-jit] run[0] enter pc=08000000 arm_pc=08000004 mode=arm cycles=0
+[sma2-jit] run[0] return pc=080000C0 arm_pc=080000C4 cycles=20
+[sma2-jit] run[1] enter pc=080000C0 arm_pc=080000C4 mode=arm cycles=20
+[sma2-jit] run[1] return pc=080000C8 arm_pc=080000CC cycles=32
+[sma2-jit] run[2] enter pc=080000C8 arm_pc=080000CC mode=arm cycles=32
+[sma2-jit] run[2] return pc=080000D4 arm_pc=080000D8 cycles=60
+[sma2-jit] run[3] enter pc=080000D4 arm_pc=080000D8 mode=arm cycles=60
+[sma2-jit] run[3] return pc=0800044C arm_pc=0800044E cycles=143
+[sma2-jit-push] jit-before pc=0800044C mode=thumb cycles=143 nextEvent=135 r13=03007E00 r14=080000F0 cpsr=0000003F r4-r7=00000000,00000000,00000000,00000000 prefetch=0000B5F0 stack=03007DEC:00000000,03007DF0:00000000,03007DF4:00000000,03007DF8:00000000,03007DFC:00000000
+[sma2-jit] run[4] enter pc=0800044C arm_pc=0800044E mode=thumb cycles=143
+[sma2-jit-push] jit-after pc=0800044C mode=thumb cycles=143 nextEvent=135 r13=03007E00 r14=080000F0 cpsr=0000003F r4-r7=00000000,00000000,00000000,00000000 prefetch=0000B5F0 stack=03007DEC:00000000,03007DF0:00000000,03007DF4:00000000,03007DF8:00000000,03007DFC:00000000
+[sma2-jit-push] jit-exit blocks=+1 fallback=+0 cycles=143->143 nextEvent=135->135 pc=0800044C->0800044E exits=event:+1,
+[sma2-jit] run[4] return pc=0800044C arm_pc=0800044E cycles=143
+[sma2-jit] no-progress pc=0800044C mode=thumb blocks=+1 fallback=+0 cycles=143->143 pc_reg=0800044E->0800044E sp=03007E00->03007E00 cpsr=0000003F->0000003F prefetch=0000B5F0->0000B5F0 exits=event:+1,
+[sma2-jit-push] after-jit-handoff pc=0800044C mode=thumb cycles=143 r13=03007E00 r14=080000F0 cpsr=0000003F r4-r7=00000000,00000000,00000000,00000000 stack=03007DEC:00000000,03007DF0:00000000,03007DF4:00000000,03007DF8:00000000,03007DFC:00000000
+[sma2-jit-push] handoff blocks=5 fallbacks=0 pc=0800044C cycles=143
+[sma2-jit-push] before-interpreter pc=0800044C mode=thumb cycles=143 r13=03007E00 r14=080000F0 cpsr=0000003F r4-r7=00000000,00000000,00000000,00000000 stack=03007DEC:00000000,03007DF0:00000000,03007DF4:00000000,03007DF8:00000000,03007DFC:00000000
+[sma2-jit-push] after-interpreter pc=0800044E mode=thumb cycles=153 r13=03007DEC r14=080000F0 cpsr=0000003F r4-r7=00000000,00000000,00000000,00000000 stack=03007DEC:00000000,03007DF0:00000000,03007DF4:00000000,03007DF8:00000000,03007DFC:080000F0
+[sma2-jit] run[5] enter pc=0800044E arm_pc=08000450 mode=thumb cycles=0
+[sma2-jit] run[5] return pc=080015D8 arm_pc=080015DA cycles=34
+[sma2-jit-diff] stage1 entry pc=080015D8 sp=03007DDC lr=0800045D cpsr=0000003F mode=thumb
+[sma2-jit-diff] stage1 interp pc=080015D8 hw=B570 next=080015DA result=0 cyc=9
+[sma2-jit-diff] stage1 interp pc=080015DA hw=B084 next=080015DC result=0 cyc=3
+[sma2-jit-diff] stage1 interp pc=080015DC hw=2500 next=080015DE result=0 cyc=3
+[sma2-jit-diff] stage1 interp pc=080015DE hw=9500 next=080015E0 result=0 cyc=6
+[sma2-jit-diff] stage1 interp pc=080015E0 hw=2180 next=080015E2 result=0 cyc=3
+[sma2-jit-diff] stage1 interp pc=080015E2 hw=0489 next=080015E4 result=0 cyc=3
+[sma2-jit-diff] stage1 interp pc=080015E4 hw=4A37 next=080015E6 result=0 cyc=14
+[sma2-jit-diff] stage1 interp pc=080015E6 hw=4668 next=080015E8 result=0 cyc=3
+[sma2-jit-diff] stage1 interp pc=080015E8 hw=F09C next=080015EA result=0 cyc=3
+[sma2-jit-diff] stage1 interp pc=080015EA hw=FCE8 next=0809DFBC result=1 cyc=11
+[sma2-jit-diff] stage1 reference ready entry=080015D8 exit=0809DFBC insns=10 cycles=58 writes=5 arrived_via=branch
+[sma2-jit-diff] stage1 ref-write 03007DCC/4=00000000
+[sma2-jit-diff] stage1 ref-write 03007DD0/4=00000000
+[sma2-jit-diff] stage1 ref-write 03007DD4/4=00000000
+[sma2-jit-diff] stage1 ref-write 03007DD8/4=0800045D
+[sma2-jit-diff] stage1 ref-write 03007DBC/4=00000000
+[sma2-jit-diff] stage1 armed-after-block pc=080015D8 cycles=34
+[sma2-jit] run[6] enter pc=080015D8 arm_pc=080015DA mode=thumb cycles=34
+[sma2-jit] run[6] return pc=0809DFBC arm_pc=0809DFBE cycles=92
+[sma2-jit-diff] stage1 native-return exit=0809DFBC reasons=site_branch:+1
+[sma2-jit-diff] stage1 native exit=0809DFBC pc=0809DFBC cycles=58 reason=site_branch
+[sma2-jit-diff] stage1 result MATCH state=match cpsr=match iwram=match cycles=match native=58 interp=58 insns=10
+[sma2-jit-diff] stage1 PASS: outer runner may resume for stage2
+[sma2-jit] run[7] enter pc=0809DFBC arm_pc=0809DFBE mode=thumb cycles=0
+[sma2-jit] run[7] return pc=0809DFC0 arm_pc=0809DFC2 cycles=3
+[sma2-jit] run[8] enter pc=0809DFC0 arm_pc=0809DFC2 mode=thumb cycles=3
+[sma2-jit] run[8] return pc=0809DFC4 arm_pc=0809DFC6 cycles=3
+[sma2-jit] run[9] enter pc=0809DFC4 arm_pc=0809DFC6 mode=thumb cycles=3
+[sma2-jit] run[9] return pc=0809DFC8 arm_pc=0809DFCA cycles=3
+[sma2-jit] run[10] enter pc=0809DFC8 arm_pc=0809DFCA mode=thumb cycles=3
+[sma2-jit] run[10] return pc=0809DFCC arm_pc=0809DFCE cycles=3
+[sma2-jit] run[11] enter pc=0809DFCC arm_pc=0809DFCE mode=thumb cycles=3
+[sma2-jit-diff] stage2 boundary reached mid-burst pc=080015EC cycles=14 (steps=3 block_runs=5)
+[sma2-jit-diff] stage2 entry pc=080015EC sp=03007DBC lr=080015ED cpsr=0000003F mode=thumb
+[sma2-jit-diff] stage2 armed at trampoline return (steps=4 block_runs=5)
+[sma2-jit] run[11] enter pc=080015EC arm_pc=080015EE mode=thumb cycles=0
+[sma2-jit] run[11] return pc=0809DFBC arm_pc=0809DFBE cycles=43
+[sma2-jit-diff] stage2 native exit=0809DFBC pc=0809DFBC mode=thumb reason=site_branch block_runs=1 fallback=0 cycles=43
+[sma2-jit-diff] stage2 interp pc=080015EC hw=9501 next=080015EE result=0 cyc=6
+[sma2-jit-diff] stage2 interp pc=080015EE hw=A801 next=080015F0 result=0 cyc=3
+[sma2-jit-diff] stage2 interp pc=080015F0 hw=21C0 next=080015F2 result=0 cyc=3
+[sma2-jit-diff] stage2 interp pc=080015F2 hw=0489 next=080015F4 result=0 cyc=3
+[sma2-jit-diff] stage2 interp pc=080015F4 hw=4A34 next=080015F6 result=0 cyc=14
+[sma2-jit-diff] stage2 interp pc=080015F6 hw=F09C next=080015F8 result=0 cyc=3
+[sma2-jit-diff] stage2 interp pc=080015F8 hw=FCE1 next=0809DFBC result=1 cyc=11
+[sma2-jit-diff] stage2 reference ready entry=080015EC exit=0809DFBC insns=7 cycles=43 writes=1 arrived_via=branch
+[sma2-jit-diff] stage2 ref-write 03007DC0/4=00000000
+[sma2-jit-diff] stage2 result MATCH state=match cpsr=match iwram=match cycles=match native=43 interp=43 insns=7
+[sma2-jit-diff] stage2 PASS: outer runner may resume for stage3
+[sma2-jit] backend=sh4-dynarec jit_steps=4 blocks_compiled=13 guest_insns_compiled=50 code_bytes=1288 block_runs=14 fallback_steps=0 flushes=0 invalidations=0 exits=14 driver_blocks=14 interpreter_handoffs=1 guest_ips=unavailable(native block runs) interp_dispatches=1
+[sma2-perf] path=present-in-place elapsed_us=1638847 interval_us=1638847 guest_frame=1 delta_frames=1 fps=0.610 instructions=1 ips=0 cycles=294364 cps=179616 interp_dispatches=1 guest_ms=1591 avg_guest_us_per_frame=1591512 render_ms=3 present_ms=41 vblank_wait_ms=6 video_convert_ms=35 audio_work_ms=1 audio_submit_ms=0 audio_generated=576 audio_queued=576 audio_consumed_delta=576 audio_silence_delta=11712 input_ms=0 pacer_wait_ms=0 sync_ms=6 presents=1 pc=0x080015fa state=thumb keyinput=0x03ff
+[sma2-jit-diff] stage3 entry pc=080015FA sp=03007DBC lr=080015FB cpsr=0000003F mode=thumb
+[sma2-jit-diff] stage3 STRH pc=080015FE address=03007DC4 value=00F8 width=2 region=iwram
+[sma2-jit-diff] stage3 stage_c_entry_pc=080015FA stage_c_entry_mode=thumb stage_c_entry_sp=03007DBC stage_c_entry_lr=080015FB stage_c_entry_cpsr=0000003F guest_cycles=294364 steps=6 block_runs=1
+[sma2-jit-diff] stage3 native entry=080015FA/thumb exit=0809DFC0/thumb reason=site_branch block_runs=1 fallback=0 cycles=46 unsupported=no
+[sma2-jit-diff] stage3 eligibility=eligible native entry=080015FA/thumb exit=0809DFC0/thumb reason=site_branch block_runs=1 fallback=0 cycles=46 unsupported=no
+[sma2-jit-diff] stage3 interp pc=080015FA hw=A802 next=080015FC result=0 cyc=3
+[sma2-jit-diff] stage3 interp pc=080015FC hw=21F8 next=080015FE result=0 cyc=3
+[sma2-jit-diff] stage3 interp pc=080015FE hw=8001 next=08001600 result=0 cyc=6
+[sma2-jit-diff] stage3 interp pc=08001600 hw=21C0 next=08001602 result=0 cyc=3
+[sma2-jit-diff] stage3 interp pc=08001602 hw=04C9 next=08001604 result=0 cyc=3
+[sma2-jit-diff] stage3 interp pc=08001604 hw=4A31 next=08001606 result=0 cyc=14
+[sma2-jit-diff] stage3 interp pc=08001606 hw=F09C next=08001608 result=0 cyc=3
+[sma2-jit-diff] stage3 interp pc=08001608 hw=FCDB next=0809DFC0 result=1 cyc=11
+[sma2-jit-diff] stage3 reference ready entry=080015FA exit=0809DFC0 insns=8 cycles=46 writes=1 arrived_via=branch
+[sma2-jit-diff] stage3 ref-write 03007DC4/2=000000F8
+[sma2-jit-diff] stage3 result MATCH state=match cpsr=match iwram=match cycles=match native=46 interp=46 insns=8
+[sma2-jit-diff] stage3 native-write 03007DC4=000000F8
+[sma2-jit-diff] stage3 PASS: bounded continuation may observe stageD
+[sma2-jit-diff] stageD entry pc=0800160A sp=03007DBC lr=0800160B cpsr=0000003F mode=thumb
+[sma2-jit-diff] stageD STRH pc=08001610 address=03007DC6 value=00FC width=2 region=iwram
+[sma2-jit-diff] stageD armed at committed entry pc=0800160A mode=thumb sp=03007DBC lr=0800160B cpsr=0000003F cycles=392795 steps=8 block_runs=1
+[sma2-jit-diff] stageD eligibility=eligible native entry=0800160A/thumb exit=0809DFC0/thumb reason=site_branch block_runs=1 fallback=0 cycles=57 unsupported=no
+[sma2-jit-diff] stageD interp pc=0800160A hw=4668 next=0800160C result=0 cyc=3
+[sma2-jit-diff] stageD interp pc=0800160C hw=300A next=0800160E result=0 cyc=3
+[sma2-jit-diff] stageD interp pc=0800160E hw=21FC next=08001610 result=0 cyc=3
+[sma2-jit-diff] stageD interp pc=08001610 hw=8001 next=08001612 result=0 cyc=6
+[sma2-jit-diff] stageD interp pc=08001612 hw=492F next=08001614 result=0 cyc=14
+[sma2-jit-diff] stageD interp pc=08001614 hw=4A2F next=08001616 result=0 cyc=14
+[sma2-jit-diff] stageD interp pc=08001616 hw=F09C next=08001618 result=0 cyc=3
+[sma2-jit-diff] stageD interp pc=08001618 hw=FCD3 next=0809DFC0 result=1 cyc=11
+[sma2-jit-diff] stageD reference ready entry=0800160A exit=0809DFC0 insns=8 cycles=57 writes=1 arrived_via=branch
+[sma2-jit-diff] stageD ref-write 03007DC6/2=000000FC
+[sma2-jit-diff] stageD result MATCH state=match cpsr=match iwram=match cycles=match native=57 interp=57 insns=8
+[sma2-jit-diff] stageD native-write 03007DC4=00FC00F8
+[sma2-jit-diff] stageD PASS: bounded continuation may observe stageE
+[sma2-jit-diff] stageE entry pc=0800161A sp=03007DBC lr=0800161B cpsr=0000003F mode=thumb
+[sma2-jit-diff] stageE store preflight pc=0800161A hw=9503 address=03007DC8 value=00000000 width=4 region=iwram
+[sma2-jit-diff] stageE armed at committed entry pc=0800161A mode=thumb sp=03007DBC lr=0800161B cpsr=0000003F cycles=401125 steps=10 block_runs=1
+[sma2-jit-diff] stageE eligibility=eligible native entry=0800161A/thumb exit=0809DFBC/thumb reason=site_branch block_runs=1 fallback=0 cycles=43 unsupported=no
+[sma2-jit-diff] stageE interp pc=0800161A hw=9503 next=0800161C result=0 cyc=6
+[sma2-jit-diff] stageE interp pc=0800161C hw=A803 next=0800161E result=0 cyc=3
+[sma2-jit-diff] stageE interp pc=0800161E hw=21E0 next=08001620 result=0 cyc=3
+[sma2-jit-diff] stageE interp pc=08001620 hw=04C9 next=08001622 result=0 cyc=3
+[sma2-jit-diff] stageE interp pc=08001622 hw=4A2D next=08001624 result=0 cyc=14
+[sma2-jit-diff] stageE interp pc=08001624 hw=F09C next=08001626 result=0 cyc=3
+[sma2-jit-diff] stageE interp pc=08001626 hw=FCCA next=0809DFBC result=1 cyc=11
+[sma2-jit-diff] stageE reference ready entry=0800161A exit=0809DFBC insns=7 cycles=43 writes=1 arrived_via=branch
+[sma2-jit-diff] stageE ref-write 03007DC8/4=00000000
+[sma2-jit-diff] stageE result MATCH state=match cpsr=match iwram=match cycles=match native=43 interp=43 insns=7
+[sma2-jit-diff] firstdiv waiting for Stage E SWI return; SWI/runtime behavior is outside comparison
+[sma2-jit-diff] firstdiv committed post-SWI boundary pc=08001628 mode=thumb transition_runs=1
+[sma2-jit-diff] firstdiv start observed committed entry=08001628/thumb after unmeasured SWI #0x0C path
+[sma2-jit-diff] firstdiv entry pc=08001628 sp=03007DBC lr=08001629 cpsr=0000003F mode=thumb
+[sma2-jit-diff] firstdiv block1 armed at committed entry pc=08001628/thumb hw=F7FF sp=03007DBC lr=08001629 cpsr=0000003F cycles=402286
+[sma2-jit-diff] firstdiv eligibility=eligible native entry=08001628/thumb exit=080014F4/thumb reason=site_branch block_runs=1 fallback=0 cycles=14 unsupported=no
+[sma2-jit-diff] firstdiv[1] interp pc=08001628 hw=F7FF next=0800162A result=0 cyc=3
+[sma2-jit-diff] firstdiv[1] interp pc=0800162A hw=FF64 next=080014F4 result=1 cyc=11
+[sma2-jit-diff] firstdiv[1] reference ready entry=08001628 exit=080014F4 insns=2 cycles=14 writes=0 arrived_via=branch
+[sma2-jit-diff] firstdiv[1] result MATCH state=match cpsr=match iwram=match cycles=match native=14 interp=14 insns=2
+[sma2-jit-diff] firstdiv entry pc=080014F4 sp=03007DBC lr=0800162D cpsr=0000003F mode=thumb
+[sma2-jit-diff] firstdiv block2 armed at committed entry pc=080014F4/thumb hw=B510 sp=03007DBC lr=0800162D cpsr=0000003F cycles=402300
+[sma2-jit-diff] stopping outer runner after boundary
+[sma2-jit-diff] === final diagnostic summary ===
+[sma2-jit-diff] stage1 status=PASS entry=080015D8/thumb exit=0809DFBC/thumb exit_reason=site_branch blocks=1 fallback=0 insns=10 interp_cycles=58 native_cycles=58 mismatches=0 cpsr=match iwram=match writes interp=5 native=0 consistent=yes iwram_diff_bytes=0
+[sma2-jit-diff] stage2 status=PASS entry=080015EC/thumb exit=0809DFBC/thumb exit_reason=site_branch blocks=1 fallback=0 insns=7 interp_cycles=43 native_cycles=43 mismatches=0 cpsr=match iwram=match writes interp=1 native=0 consistent=yes iwram_diff_bytes=0
+[sma2-jit-diff] stage3 status=PASS entry=080015FA/thumb exit=0809DFC0/thumb exit_reason=site_branch blocks=1 fallback=0 insns=8 interp_cycles=46 native_cycles=46 mismatches=0 cpsr=match iwram=match writes interp=1 native=1 consistent=yes iwram_diff_bytes=0
+[sma2-jit-diff] stageD status=PASS entry=0800160A/thumb exit=0809DFC0/thumb exit_reason=site_branch blocks=1 fallback=0 insns=8 interp_cycles=57 native_cycles=57 mismatches=0 cpsr=match iwram=match writes interp=1 native=1 consistent=yes iwram_diff_bytes=0
+[sma2-jit-diff] stageE status=PASS entry=0800161A/thumb exit=0809DFBC/thumb exit_reason=site_branch blocks=1 fallback=0 insns=7 interp_cycles=43 native_cycles=43 mismatches=0 cpsr=match iwram=match writes interp=1 native=0 consistent=yes iwram_diff_bytes=0
+[sma2-jit-diff] firstdiv status=INELIGIBLE attempts=2/4 passes=1/4 outer_steps=3/16 transition_runs=1/8 stop=first candidate violated comparison eligibility
+[sma2-jit-diff] firstdiv block1 status=PASS entry=08001628/thumb exit=080014F4/thumb reason=site_branch blocks=1 fallback=0 insns=2 native_cycles=14 interp_cycles=14 mismatches=0
+[sma2-jit-diff] firstdiv block2 status=INELIGIBLE entry=080014F4/thumb exit=08001508/thumb reason=site_fall blocks=1 fallback=0 insns=0 native_cycles=76 interp_cycles=0 mismatches=2
+[sma2-jit-diff] stage2 traversal budget steps=2/128 block_runs=6/32
+[sma2-jit-diff] stage3 traversal steps=2/128 block_runs=1/32 entry_cycles=294364 strh_pc=080015FE strh_address=03007DC4 value=00F8 width=2 region=iwram
+[sma2-jit-diff] stageD traversal steps=2/32 block_runs=1/8 entry_cycles=392795 strh_pc=08001610 strh_address=03007DC6 value=00FC width=2 region=iwram
+[sma2-jit-diff] stageE traversal steps=2/32 block_runs=1/8 entry_cycles=401125
+[sma2-jit-diff] stop condition: first candidate violated comparison eligibility
+
+final_pc=0x08001508 unmapped=0 io_unhandled=0 steps=12 cycles=0 ppu_vcount=98 ppu_frames=1 frames_presented=1
+pal_nonzero=0/1024 vram_nonzero=49152/98304 oam_nonzero=0/1024
+self_heal_coverage=NOT_STATIC dispatch_misses=0 interpreted_insns=1 healed_native=0 native_calls=0 inflight=0 failed=0
+self_heal: could not open recomp_coverage_AA2E.json for the coverage summary
+VREG = 03 ARMRST 01
+VREG = 03 ARMRST 01
+VREG = 03 ARMRST 01
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/holly/sh4_mem_area0.cpp:ReadMem_area0:275 PC: 0x00000002 PR: 0x00000000: Looks like null pointer read, 00000000 2
+-----------------
+REIOS: Booting up
+-----------------
+[dcload] /pc provided: root=/home/gpf/code/recovery/nulldc3-run1-20261020/pcroot writable=yes magic@8C004004 vector@8C004008 trap@8C004010
+
+--
+KallistiOS v2.3.0 [dreamcast/pristine]
+  Git revision: 8e704086
+  Mon Oct 19 06:28:50 PM MST 2026
+  gpf@gpf-B550-Phantom-Gaming-4-ac:/opt/toolchains/dc/kos
+  sh-elf-gcc (GCC) 17.0.0 20260705 (experimental)
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0D1E08 PR: 0x8C0D1DFC: Out of range on register index 1f000084
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0D1E18 PR: 0x8C0D1DFC: Out of range on register index 1f000084
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/sh4/sh4_mmr.cpp:WriteMem_area7:584 PC: 0x8C0D1E1C PR: 0x8C0D1DFC: Out of range on register index 1f000084
+VREG = 03 ARMRST 01
+VREG = 03 ARMRST 00
+Error in /home/gpf/code/nulldc3-dcload-pc/libswirl/hw/holly/sb.cpp:Read:640 PC: 0x8C0DA01E PR: 0x8C0DA01A: sb_ReadMem write-only reg 005f74ec 4
+
+
+GDROM:	HLE GDROM_INIT
+GDROM:	CMD INIT CC:18 PRM:0
+maple: active drivers:
+    Dreameye (Camera): Camera
+    Sound Input Peripheral: Microphone
+    PuruPuru (Vibration) Pack: JumpPack
+    VMU Driver: Clock, LCD, MemoryCard
+    Mouse Driver: Mouse
+    Keyboard Driver: Keyboard
+    Controller Driver: Controller
+    Lightgun: LightGun
+vid_set_mode: 640x480IL NTSC with 1 framebuffers.
+VREG = 03 ARMRST 00
+dc-load console support enabled
+**WARNING** Too fast Maple DMA: 0 5 7.123 1002009
+maple: attached devices:
+  A0: Dreamcast Controller           (01000000: Controller)
+  A1: Visual Memory                  (0e000000: Clock, LCD, MemoryCard)
+  A2: Visual Memory                  (0e000000: Clock, LCD, MemoryCard)
+
+[sma2] main entered
+[sma2] asset found: /pc/game.toml
+[sma2] asset found: /pc/gbarecomp/bios/gba_bios.bin
+[sma2] asset found: /pc/roms/super_mario_world_usa.gba
+[sma2] runtime entered
+[sma2] config parsed
+[sma2] resolving BIOS path: /pc/gbarecomp/bios/gba_bios.bin
+[asset] opening /pc/gbarecomp/bios/gba_bios.bin
+[asset] ftell 16384
+[sma2] BIOS path resolved
+[asset] opening /pc/roms/super_mario_world_usa.gba
+[asset] ftell 4194304
+[sma2] ROM path resolved
+[sma2] BIOS loaded
+[sma2] ROM loaded: 4194304 bytes
+[sma2] constructing GBA bus and PPU
+scanline_backend=HLE (tile-span native-color composition)
+hd_sampler_backend=HLE (cached indexed affine surface)
+sma2_cpu_backend=sh4-dynarec (pending bus init)
+cpu_backend=interpreter (GBARECOMP_FORCE_INTERP)
+scanline_backend=HLE (tile-span native-color composition)
+Saved /home/gpf/code/recovery/nulldc3-run1-20261020/portable/data/dc_nvmem.bin as nvmem
+
+
+nulldc-exit: reason=seconds emu_s=120.013168 vblanks=7193 wall_s=24.114352 speed_pct=497.6
+Sh4 Term
+Texture cache cleared
